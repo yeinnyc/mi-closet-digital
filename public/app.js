@@ -1,25 +1,37 @@
 /* =========================================================
    MI CLOSET DIGITAL
    APP.JS
-========================================================= */
-
+   ========================================================= */
 
 /* =========================================================
    ESTADO
-========================================================= */
+   ========================================================= */
 
 const state = {
   items: [],
+  looks: [],
+
   view: 'home',
   filter: 'Todas',
   search: '',
-  selectedId: null
+
+  selectedId: null,
+  selectedLookId: null,
+
+  look: {
+    top: null,
+    bottom: null,
+    onePiece: null,
+    shoes: null,
+    bag: null,
+    accessories: []
+  }
 };
 
 
 /* =========================================================
    CATEGORÍAS
-========================================================= */
+   ========================================================= */
 
 const categories = [
   'Todas',
@@ -39,11 +51,9 @@ const categories = [
 
 /* =========================================================
    UTILIDADES
-========================================================= */
+   ========================================================= */
 
-const $ = selector =>
-  document.querySelector(selector);
-
+const $ = selector => document.querySelector(selector);
 
 const esc = (value = '') =>
   String(value).replace(
@@ -58,9 +68,76 @@ const esc = (value = '') =>
   );
 
 
+function toast(message) {
+  const element = $('#toast');
+
+  if (!element) {
+    console.log(message);
+    return;
+  }
+
+  element.textContent = message;
+  element.classList.add('show');
+
+  setTimeout(() => {
+    element.classList.remove('show');
+  }, 2200);
+}
+
+
 /* =========================================================
-   ESTILOS DEL DETALLE Y EDICIÓN
-========================================================= */
+   IMÁGENES
+   ========================================================= */
+
+function getImageUrl(item) {
+  const originalUrl =
+    item?.imageUrl ||
+    item?.image ||
+    '';
+
+  if (!originalUrl) {
+    return '';
+  }
+
+  const url = String(originalUrl).trim();
+
+  let match = url.match(/[?&]id=([^&]+)/i);
+
+  if (match && match[1]) {
+    return (
+      'https://drive.google.com/thumbnail?id=' +
+      encodeURIComponent(match[1]) +
+      '&sz=w1000'
+    );
+  }
+
+  match = url.match(/\/file\/d\/([^/]+)/i);
+
+  if (match && match[1]) {
+    return (
+      'https://drive.google.com/thumbnail?id=' +
+      encodeURIComponent(match[1]) +
+      '&sz=w1000'
+    );
+  }
+
+  match = url.match(/\/d\/([^/]+)/i);
+
+  if (match && match[1]) {
+    return (
+      'https://drive.google.com/thumbnail?id=' +
+      encodeURIComponent(match[1]) +
+      '&sz=w1000'
+    );
+  }
+
+  return url;
+}
+
+
+/* =========================================================
+   ESTILOS PARA DETALLE / EDICIÓN / LOOKS
+   ========================================================= */
 
 function injectDetailStyles() {
 
@@ -68,312 +145,458 @@ function injectDetailStyles() {
     return;
   }
 
+  const style = document.createElement('style');
 
-  const style =
-    document.createElement('style');
-
-
-  style.id =
-    'detail-styles';
-
+  style.id = 'detail-styles';
 
   style.textContent = `
 
+    /* =========================
+       DETALLE ARTÍCULO
+       ========================= */
+
     .detail-overlay,
     .edit-overlay {
-
       position: fixed;
       inset: 0;
-
-      background:
-        rgba(0,0,0,.65);
-
+      background: rgba(0,0,0,.65);
       z-index: 9999;
-
       display: flex;
-
       align-items: center;
       justify-content: center;
-
       padding: 20px;
-
       box-sizing: border-box;
     }
 
-
     .detail-modal {
-
       width: min(900px, 100%);
-
       max-height: 92vh;
-
       overflow-y: auto;
-
       background: #fff;
-
       border-radius: 12px;
-
-      box-shadow:
-        0 20px 60px rgba(0,0,0,.25);
-
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
       position: relative;
     }
 
-
     .detail-close {
-
       position: absolute;
-
       top: 14px;
       right: 14px;
-
       z-index: 3;
-
       width: 38px;
       height: 38px;
-
       border: 0;
-
       border-radius: 50%;
-
       background: #111;
       color: #fff;
-
       font-size: 20px;
-
       cursor: pointer;
     }
 
-
     .detail-layout {
-
       display: grid;
-
-      grid-template-columns:
-        1fr 1fr;
+      grid-template-columns: 1fr 1fr;
     }
 
-
     .detail-photo {
-
       min-height: 500px;
-
       background: #f2f2f2;
-
       display: flex;
-
       align-items: center;
       justify-content: center;
-
       overflow: hidden;
     }
 
-
     .detail-photo img {
-
       width: 100%;
       height: 100%;
-
       min-height: 500px;
-
       object-fit: contain;
-
       display: block;
     }
 
-
     .detail-no-image {
-
       color: #777;
-
       font-size: 14px;
     }
 
-
     .detail-info {
-
-      padding:
-        42px 35px 35px;
+      padding: 42px 35px 35px;
     }
 
-
     .detail-category {
-
       font-size: 11px;
-
       letter-spacing: 1.5px;
-
       color: #777;
-
-      text-transform:
-        uppercase;
-
+      text-transform: uppercase;
       margin-bottom: 10px;
     }
 
-
     .detail-title {
-
       font-size: 30px;
-
       line-height: 1.15;
-
-      margin:
-        0 0 25px;
-
+      margin: 0 0 25px;
       color: #111;
     }
 
-
     .detail-field {
-
-      border-bottom:
-        1px solid #e5e5e5;
-
+      border-bottom: 1px solid #e5e5e5;
       padding: 14px 0;
     }
 
-
     .detail-field-label {
-
       font-size: 10px;
-
       letter-spacing: 1.2px;
-
       color: #777;
-
       margin-bottom: 5px;
     }
 
-
     .detail-field-value {
-
       font-size: 15px;
-
       color: #111;
     }
 
-
     .detail-description {
-
       line-height: 1.5;
-
-      white-space:
-        pre-wrap;
+      white-space: pre-wrap;
     }
 
-
     .detail-actions {
-
       display: flex;
-
       gap: 10px;
-
       margin-top: 28px;
-
       flex-wrap: wrap;
     }
 
-
     .detail-actions button {
-
       flex: 1;
-
       min-width: 120px;
     }
 
+    .detail-delete {
+      width: 100%;
+      margin-top: 10px;
+      min-height: 38px;
+    }
+
+
+    /* =========================
+       EDICIÓN
+       ========================= */
 
     .edit-modal {
-
       width: min(600px, 100%);
-
       max-height: 92vh;
-
       overflow-y: auto;
-
       background: #fff;
-
       border-radius: 12px;
-
       padding: 30px;
-
       box-sizing: border-box;
     }
 
-
     .edit-modal h2 {
-
       margin-top: 0;
-
       margin-bottom: 22px;
     }
 
-
     .edit-preview {
-
       width: 100%;
-
       height: 220px;
-
       background: #f2f2f2;
-
       border-radius: 8px;
-
       overflow: hidden;
-
       margin-bottom: 18px;
-
       display: flex;
-
       align-items: center;
       justify-content: center;
     }
 
-
     .edit-preview img {
-
       width: 100%;
       height: 100%;
-
       object-fit: contain;
     }
 
-
     .edit-file {
-
       margin-bottom: 20px;
     }
 
-
     .edit-actions {
-
       display: flex;
-
       gap: 10px;
-
       margin-top: 25px;
     }
 
-
     .edit-actions button {
-
       flex: 1;
     }
 
 
-    .item-card {
+    /* =========================
+       LOOKS
+       ========================= */
 
+    .looks-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .look-section-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 18px;
+    }
+
+    .look-section-title strong {
+      font-size: 15px;
+      letter-spacing: .5px;
+    }
+
+    .look-section-title span {
+      font-size: 13px;
+      color: #777;
+    }
+
+    .look-preview-panel {
+      margin-bottom: 25px;
+    }
+
+    .look-preview {
+      min-height: 170px;
+      border: 1px dashed #d5d5d5;
+      border-radius: 10px;
+      padding: 18px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .look-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 130px;
+      gap: 8px;
+      color: #777;
+      text-align: center;
+    }
+
+    .look-empty-icon {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #bbb;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+
+    .look-items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 180px));
+      gap: 14px;
+    }
+
+    .look-item {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
       cursor: pointer;
+      background: #fff;
+      position: relative;
+      transition: .15s ease;
+    }
+
+    .look-item:hover {
+      border-color: #111;
+    }
+
+    .look-item.selected {
+      border: 2px solid #111;
+    }
+
+    .look-item-image {
+      height: 150px;
+      background: #f3f3f3;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .look-item-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .look-item-info {
+      padding: 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .look-item-info strong {
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .look-item-info span {
+      font-size: 11px;
+      color: #777;
+    }
+
+    .look-selected {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #111;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .selected-look-grid {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .selected-look-item {
+      width: 120px;
+      text-align: center;
+    }
+
+    .selected-look-item img,
+    .selected-look-item .item-image-empty {
+      width: 120px;
+      height: 145px;
+      object-fit: contain;
+      background: #f3f3f3;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .selected-look-item span {
+      display: block;
+      margin-top: 7px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .look-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin: 25px 0;
     }
 
 
-    .detail-delete {
+    /* =========================
+       LOOKS GUARDADOS
+       ========================= */
 
-      width: 100%;
+    .saved-looks-panel {
+      margin-top: 35px;
+    }
 
-      margin-top: 10px;
+    .saved-looks-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fill, minmax(280px, 1fr));
+      gap: 18px;
+    }
 
-      min-height: 38px;
+    .saved-look-card {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .saved-look-header {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .saved-look-name {
+      font-size: 15px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .saved-look-items {
+      padding: 15px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .saved-look-item {
+      width: 75px;
+      text-align: center;
+    }
+
+    .saved-look-item img,
+    .saved-look-item .item-image-empty {
+      width: 75px;
+      height: 85px;
+      object-fit: contain;
+      background: #f3f3f3;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .saved-look-item span {
+      display: block;
+      margin-top: 4px;
+      font-size: 9px;
+      line-height: 1.2;
+    }
+
+    .saved-look-actions {
+      padding: 12px 15px 15px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .saved-look-actions button {
+      flex: 1;
+    }
+
+    .saved-look-date {
+      color: #777;
+      font-size: 10px;
+      margin-top: 3px;
     }
 
 
@@ -381,66 +604,66 @@ function injectDetailStyles() {
 
       .detail-overlay,
       .edit-overlay {
-
         padding: 10px;
       }
 
-
       .detail-modal {
-
         max-height: 96vh;
       }
 
-
       .detail-layout {
-
         grid-template-columns: 1fr;
       }
 
-
       .detail-photo {
-
         min-height: 330px;
-
         max-height: 400px;
       }
-
 
       .detail-photo img {
-
         min-height: 330px;
-
         max-height: 400px;
       }
 
-
       .detail-info {
-
         padding: 25px 20px;
       }
 
-
       .detail-title {
-
         font-size: 24px;
       }
 
-
       .edit-modal {
-
         padding: 22px;
       }
 
-
       .edit-actions {
-
         flex-direction: column;
       }
 
+      .looks-header {
+        flex-direction: column;
+      }
+
+      .look-items-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .look-actions {
+        flex-direction: column;
+      }
+
+      .look-actions button {
+        width: 100%;
+      }
+
+      .saved-looks-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
   `;
-
 
   document.head.appendChild(style);
 }
@@ -448,7 +671,7 @@ function injectDetailStyles() {
 
 /* =========================================================
    CARGAR ARTÍCULOS
-========================================================= */
+   ========================================================= */
 
 async function loadItems() {
 
@@ -457,43 +680,30 @@ async function loadItems() {
     const response =
       await fetch('/api/items');
 
-
     const text =
       await response.text();
 
-
     let data;
 
-
     try {
-
-      data =
-        JSON.parse(text);
-
+      data = JSON.parse(text);
     } catch {
-
       throw new Error(
         'El servidor devolvió una respuesta no válida.'
       );
-
     }
 
-
     if (!response.ok) {
-
       throw new Error(
         data.error ||
         'No se pudieron cargar los artículos.'
       );
-
     }
-
 
     state.items =
       Array.isArray(data.items)
         ? data.items
         : [];
-
 
     render();
 
@@ -504,12 +714,9 @@ async function loadItems() {
       error
     );
 
-
     state.items = [];
 
-
     render();
-
 
     toast(
       error.message ||
@@ -520,53 +727,95 @@ async function loadItems() {
 
 
 /* =========================================================
+   CARGAR LOOKS
+   ========================================================= */
+
+async function loadLooks() {
+
+  try {
+
+    const response =
+      await fetch('/api/looks');
+
+    const text =
+      await response.text();
+
+    let data;
+
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(
+        'El servidor devolvió una respuesta no válida.'
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        'No se pudieron cargar los looks.'
+      );
+    }
+
+    state.looks =
+      Array.isArray(data.looks)
+        ? data.looks
+        : [];
+
+    if (state.view === 'looks') {
+      renderLooks();
+    }
+
+  } catch (error) {
+
+    console.error(
+      'Error cargando looks:',
+      error
+    );
+
+    state.looks = [];
+
+  }
+}
+
+
+/* =========================================================
    NAVEGACIÓN
-========================================================= */
+   ========================================================= */
 
 function setView(view, filter) {
 
-  state.view =
-    view;
-
+  state.view = view;
 
   if (filter) {
-
-    state.filter =
-      filter;
+    state.filter = filter;
   }
-
 
   render();
 
-
   window.scrollTo({
-
     top: 0,
-
     behavior: 'smooth'
-
   });
 }
 
 
 /* =========================================================
    EVENTOS GLOBALES
-========================================================= */
+   ========================================================= */
 
 document.addEventListener(
   'click',
   event => {
 
-
-    /* -----------------------------
+    /* =============================
        NAVEGACIÓN
-    ----------------------------- */
+       ============================= */
 
     const viewButton =
       event.target.closest(
         '[data-view]'
       );
-
 
     if (viewButton) {
 
@@ -579,39 +828,35 @@ document.addEventListener(
     }
 
 
-    /* -----------------------------
-       ELIMINAR DESDE TARJETA
-    ----------------------------- */
+    /* =============================
+       ELIMINAR ARTÍCULO
+       ============================= */
 
     const deleteButton =
       event.target.closest(
         '[data-delete]'
       );
 
-
     if (deleteButton) {
 
       event.stopPropagation();
-
 
       deleteItem(
         deleteButton.dataset.delete
       );
 
-
       return;
     }
 
 
-    /* -----------------------------
+    /* =============================
        ABRIR DETALLE
-    ----------------------------- */
+       ============================= */
 
     const itemCard =
       event.target.closest(
         '[data-item-id]'
       );
-
 
     if (itemCard) {
 
@@ -626,10 +871,9 @@ document.addEventListener(
 
 /* =========================================================
    RENDER PRINCIPAL
-========================================================= */
+   ========================================================= */
 
 function render() {
-
 
   [
     'home',
@@ -641,7 +885,6 @@ function render() {
 
     const section =
       $('#' + id);
-
 
     if (section) {
 
@@ -660,13 +903,10 @@ function render() {
 
       button.classList.toggle(
         'active',
-
         button.dataset.view ===
           state.view &&
-
         (
           !button.dataset.filter ||
-
           button.dataset.filter ===
             state.filter
         )
@@ -675,42 +915,23 @@ function render() {
     });
 
 
-  if (
-    state.view === 'home'
-  ) {
-
+  if (state.view === 'home') {
     renderHome();
   }
 
-
-  if (
-    state.view === 'ropa'
-  ) {
-
+  if (state.view === 'ropa') {
     renderRopa();
   }
 
-
-  if (
-    state.view === 'add'
-  ) {
-
+  if (state.view === 'add') {
     renderAdd();
   }
 
-
-  if (
-    state.view === 'looks'
-  ) {
-
+  if (state.view === 'looks') {
     renderLooks();
   }
 
-
-  if (
-    state.view === 'config'
-  ) {
-
+  if (state.view === 'config') {
     renderConfig();
   }
 
@@ -719,13 +940,11 @@ function render() {
 
 /* =========================================================
    INICIO
-========================================================= */
+   ========================================================= */
 
 function renderHome() {
 
-
   const counts = {
-
 
     prendas:
       state.items.filter(
@@ -737,14 +956,12 @@ function renderHome() {
           ].includes(item.category)
       ).length,
 
-
     zapatos:
       state.items.filter(
         item =>
           item.category ===
           'Zapatos'
       ).length,
-
 
     bolsos:
       state.items.filter(
@@ -753,14 +970,12 @@ function renderHome() {
           'Bolsos'
       ).length,
 
-
     accesorios:
       state.items.filter(
         item =>
           item.category ===
           'Accesorios'
       ).length
-
   };
 
 
@@ -769,69 +984,33 @@ function renderHome() {
     <h1>MI CLOSET</h1>
 
     <p class="subtitle">
-
       Tu armario, organizado y
       listo para crear nuevos looks.
-
     </p>
-
 
     <div class="grid">
 
-
       <div class="stat">
-
-        <div class="label">
-          PRENDAS
-        </div>
-
-        <strong>
-          ${counts.prendas}
-        </strong>
-
+        <div class="label">PRENDAS</div>
+        <strong>${counts.prendas}</strong>
       </div>
 
-
       <div class="stat">
-
-        <div class="label">
-          ZAPATOS
-        </div>
-
-        <strong>
-          ${counts.zapatos}
-        </strong>
-
+        <div class="label">ZAPATOS</div>
+        <strong>${counts.zapatos}</strong>
       </div>
 
-
       <div class="stat">
-
-        <div class="label">
-          BOLSOS
-        </div>
-
-        <strong>
-          ${counts.bolsos}
-        </strong>
-
+        <div class="label">BOLSOS</div>
+        <strong>${counts.bolsos}</strong>
       </div>
 
-
       <div class="stat">
-
-        <div class="label">
-          ACCESORIOS
-        </div>
-
-        <strong>
-          ${counts.accesorios}
-        </strong>
-
+        <div class="label">ACCESORIOS</div>
+        <strong>${counts.accesorios}</strong>
       </div>
 
     </div>
-
 
     <div style="margin:28px 0">
 
@@ -845,16 +1024,11 @@ function renderHome() {
 
     </div>
 
-
     <div class="panel">
 
-      <b>
-        ÚLTIMOS ARTÍCULOS
-      </b>
+      <b>ÚLTIMOS ARTÍCULOS</b>
 
-      <div
-        style="height:18px">
-      </div>
+      <div style="height:18px"></div>
 
       ${renderItemGrid(
         state.items.slice(0, 4)
@@ -868,43 +1042,33 @@ function renderHome() {
 
 /* =========================================================
    MI ROPA
-========================================================= */
+   ========================================================= */
 
 function renderRopa() {
 
-
   const filtered =
     state.items.filter(item => {
-
 
       const categoryOk =
         state.filter === 'Todas' ||
         item.category ===
           state.filter;
 
-
       const q =
         state.search
           .toLowerCase()
           .trim();
 
-
-      const text =
-        `
+      const text = `
         ${item.name || ''}
         ${item.category || ''}
         ${item.color || ''}
         ${item.description || ''}
-        `
-        .toLowerCase();
-
+      `.toLowerCase();
 
       return (
         categoryOk &&
-        (
-          !q ||
-          text.includes(q)
-        )
+        (!q || text.includes(q))
       );
 
     });
@@ -915,12 +1079,9 @@ function renderRopa() {
     <h1>MI ROPA</h1>
 
     <p class="subtitle">
-
       Todos tus artículos,
       organizados en un solo lugar.
-
     </p>
-
 
     <div class="toolbar">
 
@@ -931,7 +1092,6 @@ function renderRopa() {
         value="${esc(state.search)}"
       >
 
-
       <button
         class="btn"
         data-view="add">
@@ -941,7 +1101,6 @@ function renderRopa() {
       </button>
 
     </div>
-
 
     <div class="filters">
 
@@ -965,19 +1124,12 @@ function renderRopa() {
 
     </div>
 
-
     ${renderItemGrid(filtered)}
 
   `;
 
 
-  /* =====================================================
-     BÚSQUEDA
-  ===================================================== */
-
-  const search =
-    $('#search');
-
+  const search = $('#search');
 
   if (search) {
 
@@ -985,27 +1137,21 @@ function renderRopa() {
       'input',
       event => {
 
-
         state.search =
           event.target.value;
-
 
         const cursorPosition =
           event.target.selectionStart ??
           state.search.length;
 
-
         renderRopa();
-
 
         const newSearch =
           $('#search');
 
-
         if (newSearch) {
 
           newSearch.focus();
-
 
           newSearch.setSelectionRange(
             cursorPosition,
@@ -1015,13 +1161,8 @@ function renderRopa() {
 
       }
     );
-
   }
 
-
-  /* =====================================================
-     FILTROS
-  ===================================================== */
 
   document
     .querySelectorAll('[data-cat]')
@@ -1034,7 +1175,6 @@ function renderRopa() {
           state.filter =
             button.dataset.cat;
 
-
           renderRopa();
 
         }
@@ -1046,54 +1186,10 @@ function renderRopa() {
 
 
 /* =========================================================
-   IMÁGENES
-========================================================= */
-
-function getImageUrl(item) {
-
-
-  const originalUrl =
-    item?.imageUrl ||
-    item?.image ||
-    '';
-
-
-  if (!originalUrl) {
-
-    return '';
-  }
-
-
-  const match =
-    String(originalUrl).match(
-      /[?&]id=([^&]+)/i
-    );
-
-
-  if (
-    match &&
-    match[1]
-  ) {
-
-    return (
-      'https://drive.google.com/thumbnail?id=' +
-      encodeURIComponent(match[1]) +
-      '&sz=w1000'
-    );
-
-  }
-
-
-  return originalUrl;
-}
-
-
-/* =========================================================
-   TARJETAS
-========================================================= */
+   TARJETAS DE ARTÍCULOS
+   ========================================================= */
 
 function renderItemGrid(items) {
-
 
   if (
     !Array.isArray(items) ||
@@ -1101,14 +1197,10 @@ function renderItemGrid(items) {
   ) {
 
     return `
-
       <div class="empty">
-
         Aún no tienes
         artículos guardados.
-
       </div>
-
     `;
   }
 
@@ -1119,10 +1211,8 @@ function renderItemGrid(items) {
 
       ${items.map(item => {
 
-
         const imageUrl =
           getImageUrl(item);
-
 
         return `
 
@@ -1130,47 +1220,41 @@ function renderItemGrid(items) {
             class="item-card"
             data-item-id="${esc(item.id)}">
 
-
             ${
               imageUrl
 
-                ? `
+              ? `
 
-                  <img
-                    src="${esc(imageUrl)}"
-                    alt="${esc(
-                      item.name ||
-                      'Artículo'
-                    )}"
-                    loading="lazy"
-                  >
+                <img
+                  src="${esc(imageUrl)}"
+                  alt="${esc(
+                    item.name ||
+                    'Artículo'
+                  )}"
+                  loading="lazy"
+                >
 
-                `
+              `
 
-                : `
+              : `
 
-                  <div
-                    class="item-image-empty">
+                <div
+                  class="item-image-empty">
 
-                    Sin imagen
+                  Sin imagen
 
-                  </div>
+                </div>
 
-                `
+              `
             }
-
 
             <div class="item-info">
 
-
               <div class="item-name">
-
                 ${esc(
                   item.name || ''
                 )}
-
               </div>
-
 
               <div class="item-meta">
 
@@ -1186,7 +1270,6 @@ function renderItemGrid(items) {
 
               </div>
 
-
               <button
                 class="btn-delete"
                 data-delete="${esc(item.id)}">
@@ -1194,7 +1277,6 @@ function renderItemGrid(items) {
                 ELIMINAR
 
               </button>
-
 
             </div>
 
@@ -1211,11 +1293,10 @@ function renderItemGrid(items) {
 
 
 /* =========================================================
-   DETALLE
-========================================================= */
+   DETALLE ARTÍCULO
+   ========================================================= */
 
 function openDetail(id) {
-
 
   const item =
     state.items.find(
@@ -1223,7 +1304,6 @@ function openDetail(id) {
         String(current.id) ===
         String(id)
     );
-
 
   if (!item) {
 
@@ -1234,34 +1314,26 @@ function openDetail(id) {
     return;
   }
 
-
   state.selectedId =
     String(item.id);
 
-
   injectDetailStyles();
-
 
   const imageUrl =
     getImageUrl(item);
 
-
   const overlay =
     document.createElement('div');
-
 
   overlay.className =
     'detail-overlay';
 
-
   overlay.id =
     'detail-overlay';
-
 
   overlay.innerHTML = `
 
     <div class="detail-modal">
-
 
       <button
         class="detail-close"
@@ -1272,44 +1344,40 @@ function openDetail(id) {
 
       </button>
 
-
       <div class="detail-layout">
-
 
         <div class="detail-photo">
 
           ${
             imageUrl
 
-              ? `
+            ? `
 
-                <img
-                  src="${esc(imageUrl)}"
-                  alt="${esc(
-                    item.name ||
-                    'Artículo'
-                  )}"
-                >
+              <img
+                src="${esc(imageUrl)}"
+                alt="${esc(
+                  item.name ||
+                  'Artículo'
+                )}"
+              >
 
-              `
+            `
 
-              : `
+            : `
 
-                <div
-                  class="detail-no-image">
+              <div
+                class="detail-no-image">
 
-                  Sin imagen
+                Sin imagen
 
-                </div>
+              </div>
 
-              `
+            `
           }
 
         </div>
 
-
         <div class="detail-info">
-
 
           <div class="detail-category">
 
@@ -1318,7 +1386,6 @@ function openDetail(id) {
             )}
 
           </div>
-
 
           <h2 class="detail-title">
 
@@ -1329,20 +1396,13 @@ function openDetail(id) {
 
           </h2>
 
-
           <div class="detail-field">
 
-
-            <div
-              class="detail-field-label">
-
+            <div class="detail-field-label">
               COLOR
-
             </div>
 
-
-            <div
-              class="detail-field-value">
+            <div class="detail-field-value">
 
               ${esc(
                 item.color ||
@@ -1353,23 +1413,18 @@ function openDetail(id) {
 
           </div>
 
-
           <div class="detail-field">
 
-
-            <div
-              class="detail-field-label">
+            <div class="
+              detail-field-label">
 
               DESCRIPCIÓN
 
             </div>
 
-
-            <div
-              class="
-                detail-field-value
-                detail-description
-              ">
+            <div class="
+              detail-field-value
+              detail-description">
 
               ${esc(
                 item.description ||
@@ -1380,9 +1435,7 @@ function openDetail(id) {
 
           </div>
 
-
           <div class="detail-actions">
-
 
             <button
               class="btn"
@@ -1392,7 +1445,6 @@ function openDetail(id) {
 
             </button>
 
-
             <button
               class="btn secondary"
               id="detail-back">
@@ -1401,21 +1453,17 @@ function openDetail(id) {
 
             </button>
 
-
           </div>
-
 
           <button
             class="
               btn-delete
-              detail-delete
-            "
+              detail-delete"
             id="detail-delete">
 
             ELIMINAR ARTÍCULO
 
           </button>
-
 
         </div>
 
@@ -1424,7 +1472,6 @@ function openDetail(id) {
     </div>
 
   `;
-
 
   document.body.appendChild(
     overlay
@@ -1470,8 +1517,7 @@ function openDetail(id) {
     event => {
 
       if (
-        event.target ===
-        overlay
+        event.target === overlay
       ) {
 
         closeDetail();
@@ -1486,20 +1532,16 @@ function openDetail(id) {
 
 /* =========================================================
    CERRAR DETALLE
-========================================================= */
+   ========================================================= */
 
 function closeDetail() {
-
 
   const overlay =
     $('#detail-overlay');
 
-
   if (overlay) {
-
     overlay.remove();
   }
-
 
   state.selectedId =
     null;
@@ -1507,85 +1549,69 @@ function closeDetail() {
 
 
 /* =========================================================
-   EDITAR
-========================================================= */
+   EDITAR ARTÍCULO
+   ========================================================= */
 
 function openEdit(item) {
 
-
   injectDetailStyles();
 
-
   closeDetail();
-
 
   const overlay =
     document.createElement('div');
 
-
   overlay.className =
     'edit-overlay';
-
 
   overlay.id =
     'edit-overlay';
 
-
   const imageUrl =
     getImageUrl(item);
-
 
   overlay.innerHTML = `
 
     <div class="edit-modal">
 
-
       <h2>
         EDITAR ARTÍCULO
       </h2>
-
 
       <div class="edit-preview">
 
         ${
           imageUrl
 
-            ? `
+          ? `
 
-              <img
-                id="edit-preview-img"
-                src="${esc(imageUrl)}"
-                alt="${esc(
-                  item.name ||
-                  'Artículo'
-                )}"
-              >
+            <img
+              id="edit-preview-img"
+              src="${esc(imageUrl)}"
+              alt="${esc(
+                item.name ||
+                'Artículo'
+              )}"
+            >
 
-            `
+          `
 
-            : `
+          : `
 
-              <span>
-                Sin imagen
-              </span>
+            <span>
+              Sin imagen
+            </span>
 
-            `
+          `
         }
 
       </div>
 
-
       <div class="edit-file">
 
-
         <label>
-
-          <b>
-            CAMBIAR FOTO
-          </b>
-
+          <b>CAMBIAR FOTO</b>
         </label>
-
 
         <input
           id="edit-file"
@@ -1599,16 +1625,11 @@ function openEdit(item) {
 
       </div>
 
-
       <div class="fields">
-
 
         <div class="field">
 
-          <label>
-            NOMBRE
-          </label>
-
+          <label>NOMBRE</label>
 
           <input
             id="edit-name"
@@ -1619,16 +1640,11 @@ function openEdit(item) {
 
         </div>
 
-
         <div class="field">
 
-          <label>
-            CATEGORÍA
-          </label>
+          <label>CATEGORÍA</label>
 
-
-          <select
-            id="edit-category">
+          <select id="edit-category">
 
             ${categories
               .filter(
@@ -1639,9 +1655,7 @@ function openEdit(item) {
                 category => `
 
                   <option
-                    value="${esc(
-                      category
-                    )}"
+                    value="${esc(category)}"
                     ${
                       category ===
                       item.category
@@ -1649,9 +1663,7 @@ function openEdit(item) {
                         : ''
                     }>
 
-                    ${esc(
-                      category
-                    )}
+                    ${esc(category)}
 
                   </option>
 
@@ -1663,13 +1675,9 @@ function openEdit(item) {
 
         </div>
 
-
         <div class="field">
 
-          <label>
-            COLOR
-          </label>
-
+          <label>COLOR</label>
 
           <input
             id="edit-color"
@@ -1680,13 +1688,9 @@ function openEdit(item) {
 
         </div>
 
-
         <div class="field">
 
-          <label>
-            DESCRIPCIÓN
-          </label>
-
+          <label>DESCRIPCIÓN</label>
 
           <textarea
             id="edit-description"
@@ -1696,12 +1700,9 @@ function openEdit(item) {
 
         </div>
 
-
       </div>
 
-
       <div class="edit-actions">
-
 
         <button
           class="btn secondary"
@@ -1711,7 +1712,6 @@ function openEdit(item) {
 
         </button>
 
-
         <button
           class="btn"
           id="edit-save">
@@ -1720,20 +1720,16 @@ function openEdit(item) {
 
         </button>
 
-
       </div>
-
 
       <div
         id="edit-status"
         class="status">
       </div>
 
-
     </div>
 
   `;
-
 
   document.body.appendChild(
     overlay
@@ -1752,15 +1748,12 @@ function openEdit(item) {
       'change',
       event => {
 
-
         const file =
           event.target.files[0];
-
 
         if (!file) {
           return;
         }
-
 
         if (
           !file.type.startsWith(
@@ -1778,7 +1771,6 @@ function openEdit(item) {
           return;
         }
 
-
         if (
           file.size >
           8 * 1024 * 1024
@@ -1794,16 +1786,11 @@ function openEdit(item) {
           return;
         }
 
-
         const preview =
           $('#edit-preview-img');
 
-
         const newUrl =
-          URL.createObjectURL(
-            file
-          );
-
+          URL.createObjectURL(file);
 
         if (preview) {
 
@@ -1816,7 +1803,6 @@ function openEdit(item) {
             document.querySelector(
               '.edit-preview'
             );
-
 
           if (container) {
 
@@ -1850,8 +1836,7 @@ function openEdit(item) {
     event => {
 
       if (
-        event.target ===
-        overlay
+        event.target === overlay
       ) {
 
         overlay.remove();
@@ -1866,72 +1851,54 @@ function openEdit(item) {
 
 /* =========================================================
    ACTUALIZAR ARTÍCULO
-========================================================= */
+   ========================================================= */
 
 async function updateItem(id) {
-
 
   const name =
     $('#edit-name')
       ?.value
       .trim() || '';
 
-
   const category =
     $('#edit-category')
       ?.value || '';
-
 
   const color =
     $('#edit-color')
       ?.value
       .trim() || '';
 
-
   const description =
     $('#edit-description')
       ?.value
       .trim() || '';
-
 
   const file =
     $('#edit-file')
       ?.files?.[0] || null;
 
 
-  /* =====================================================
-     VALIDACIONES
-  ===================================================== */
-
   if (!name) {
-
     toast(
       'Escribe el nombre del artículo.'
     );
-
     return;
   }
 
-
   if (!category) {
-
     toast(
       'Selecciona una categoría.'
     );
-
     return;
   }
 
-
   if (!color) {
-
     toast(
       'Escribe el color del artículo.'
     );
-
     return;
   }
-
 
   if (file) {
 
@@ -1948,7 +1915,6 @@ async function updateItem(id) {
       return;
     }
 
-
     if (
       file.size >
       8 * 1024 * 1024
@@ -1960,69 +1926,50 @@ async function updateItem(id) {
 
       return;
     }
-
   }
 
 
-  /* =====================================================
-     FORMULARIO
-  ===================================================== */
-
   const formData =
     new FormData();
-
 
   formData.append(
     'id',
     id
   );
 
-
   formData.append(
     'name',
     name
   );
-
 
   formData.append(
     'category',
     category
   );
 
-
   formData.append(
     'color',
     color
   );
-
 
   formData.append(
     'description',
     description
   );
 
-
   if (file) {
-
     formData.append(
       'image',
       file
     );
-
   }
 
-
-  /* =====================================================
-     ELEMENTOS DE INTERFAZ
-  ===================================================== */
 
   const button =
     $('#edit-save');
 
-
   const status =
     $('#edit-status');
-
 
   if (!button) {
 
@@ -2034,27 +1981,18 @@ async function updateItem(id) {
   }
 
 
-  button.disabled =
-    true;
-
+  button.disabled = true;
 
   button.textContent =
     'GUARDANDO...';
 
-
   if (status) {
-
     status.textContent =
       'Guardando cambios...';
   }
 
 
-  /* =====================================================
-     ENVIAR AL SERVIDOR
-  ===================================================== */
-
   try {
-
 
     const response =
       await fetch(
@@ -2065,33 +2003,19 @@ async function updateItem(id) {
         }
       );
 
-
     const text =
       await response.text();
 
-
     let data;
 
-
     try {
-
       data =
         JSON.parse(text);
-
     } catch {
-
-      console.error(
-        'Respuesta recibida:',
-        text
-      );
-
-
       throw new Error(
         'El servidor devolvió una respuesta no válida.'
       );
-
     }
-
 
     if (!response.ok) {
 
@@ -2099,9 +2023,7 @@ async function updateItem(id) {
         data.error ||
         'No se pudieron guardar los cambios.'
       );
-
     }
-
 
     if (
       !data.item ||
@@ -2111,13 +2033,8 @@ async function updateItem(id) {
       throw new Error(
         'El servidor no devolvió correctamente el artículo actualizado.'
       );
-
     }
 
-
-    /* =================================================
-       ACTUALIZAR MEMORIA
-    ================================================= */
 
     const index =
       state.items.findIndex(
@@ -2137,62 +2054,39 @@ async function updateItem(id) {
       state.items.push(
         data.item
       );
-
     }
 
 
-    /* =================================================
-       CERRAR
-    ================================================= */
-
     $('#edit-overlay')
       ?.remove();
-
-
-    /* =================================================
-       MENSAJE
-    ================================================= */
 
     toast(
       'Artículo actualizado correctamente.'
     );
 
-
-    /* =================================================
-       REDIBUJAR
-    ================================================= */
-
     render();
 
-
   } catch (error) {
-
 
     console.error(
       'Error actualizando artículo:',
       error
     );
 
-
     toast(
       error.message ||
       'No se pudieron guardar los cambios.'
     );
 
-
     button.disabled =
       false;
-
 
     button.textContent =
       'GUARDAR CAMBIOS';
 
-
     if (status) {
-
       status.textContent =
         '';
-
     }
 
   }
@@ -2202,10 +2096,9 @@ async function updateItem(id) {
 
 /* =========================================================
    ELIMINAR ARTÍCULO
-========================================================= */
+   ========================================================= */
 
 async function deleteItem(id) {
-
 
   const item =
     state.items.find(
@@ -2213,7 +2106,6 @@ async function deleteItem(id) {
         String(currentItem.id) ===
         String(id)
     );
-
 
   if (!item) {
 
@@ -2230,14 +2122,12 @@ async function deleteItem(id) {
       `¿Quieres eliminar "${item.name}"?`
     );
 
-
   if (!confirmed) {
     return;
   }
 
 
   try {
-
 
     const response =
       await fetch(
@@ -2247,27 +2137,19 @@ async function deleteItem(id) {
         }
       );
 
-
     const text =
       await response.text();
 
-
     let data;
 
-
     try {
-
       data =
         JSON.parse(text);
-
     } catch {
-
       throw new Error(
         'El servidor devolvió una respuesta no válida.'
       );
-
     }
-
 
     if (!response.ok) {
 
@@ -2275,7 +2157,6 @@ async function deleteItem(id) {
         data.error ||
         'No se pudo eliminar el artículo.'
       );
-
     }
 
 
@@ -2289,23 +2170,18 @@ async function deleteItem(id) {
 
     closeDetail();
 
-
     toast(
       'Artículo eliminado.'
     );
 
-
     render();
 
-
   } catch (error) {
-
 
     console.error(
       'Error eliminando artículo:',
       error
     );
-
 
     toast(
       error.message ||
@@ -2319,10 +2195,9 @@ async function deleteItem(id) {
 
 /* =========================================================
    AGREGAR ARTÍCULO
-========================================================= */
+   ========================================================= */
 
 function renderAdd() {
-
 
   $('#add').innerHTML = `
 
@@ -2330,25 +2205,18 @@ function renderAdd() {
       AGREGAR ARTÍCULO
     </h1>
 
-
     <p class="subtitle">
-
       Sube una foto y completa
       los datos del artículo.
-
     </p>
-
 
     <div class="add-layout">
 
-
       <div class="panel">
-
 
         <div
           id="dropzone"
           class="dropzone">
-
 
           <div class="drop-content">
 
@@ -2356,25 +2224,19 @@ function renderAdd() {
               SUBIR FOTO
             </strong>
 
-
             <span>
-
               JPG, PNG o WEBP
               · máximo 8 MB
-
             </span>
 
           </div>
-
 
           <img
             id="preview"
             alt="Vista previa"
           >
 
-
         </div>
-
 
         <input
           id="file"
@@ -2387,28 +2249,22 @@ function renderAdd() {
           hidden
         >
 
-
         <div
           id="status"
           class="status">
         </div>
 
-
       </div>
-
 
       <div class="panel">
 
-
         <div class="fields">
-
 
           <div class="field">
 
             <label>
               NOMBRE
             </label>
-
 
             <input
               id="name"
@@ -2417,13 +2273,11 @@ function renderAdd() {
 
           </div>
 
-
           <div class="field">
 
             <label>
               CATEGORÍA
             </label>
-
 
             <select id="category">
 
@@ -2440,9 +2294,7 @@ function renderAdd() {
                         category
                       )}">
 
-                      ${esc(
-                        category
-                      )}
+                      ${esc(category)}
 
                     </option>
 
@@ -2454,13 +2306,11 @@ function renderAdd() {
 
           </div>
 
-
           <div class="field">
 
             <label>
               COLOR
             </label>
-
 
             <input
               id="color"
@@ -2469,29 +2319,22 @@ function renderAdd() {
 
           </div>
 
-
           <div class="field">
 
             <label>
               DESCRIPCIÓN
             </label>
 
-
             <textarea
               id="description"
-              placeholder="
-                Descripción del artículo...
-              "
+              placeholder="Descripción del artículo..."
             ></textarea>
 
           </div>
 
-
         </div>
 
-
         <div class="actions">
-
 
           <button
             class="btn secondary"
@@ -2500,7 +2343,6 @@ function renderAdd() {
             CANCELAR
 
           </button>
-
 
           <button
             id="save"
@@ -2511,17 +2353,12 @@ function renderAdd() {
 
           </button>
 
-
         </div>
 
-
         <p class="small-note">
-
           Puedes corregir cualquier
           dato antes de guardar.
-
         </p>
-
 
       </div>
 
@@ -2533,16 +2370,13 @@ function renderAdd() {
   const dropzone =
     $('#dropzone');
 
-
   const fileInput =
     $('#file');
-
 
   if (
     !dropzone ||
     !fileInput
   ) {
-
     return;
   }
 
@@ -2558,15 +2392,11 @@ function renderAdd() {
     'change',
     () => {
 
-
       const file =
         fileInput.files?.[0];
 
-
       if (file) {
-
         analyze(file);
-
       }
 
     }
@@ -2584,15 +2414,13 @@ function renderAdd() {
 
 /* =========================================================
    PREVISUALIZAR FOTO
-========================================================= */
+   ========================================================= */
 
 function analyze(image) {
-
 
   if (!image) {
     return;
   }
-
 
   if (
     !image.type.startsWith(
@@ -2606,7 +2434,6 @@ function analyze(image) {
 
     return;
   }
-
 
   if (
     image.size >
@@ -2624,10 +2451,8 @@ function analyze(image) {
   const preview =
     $('#preview');
 
-
   const dropContent =
     $('.drop-content');
-
 
   if (!preview) {
     return;
@@ -2639,56 +2464,44 @@ function analyze(image) {
       image
     );
 
-
   preview.style.display =
     'block';
 
-
   if (dropContent) {
-
     dropContent.style.display =
       'none';
-
   }
 
 
   $('#name').value =
     '';
 
-
   $('#category').value =
     'Busos';
-
 
   $('#color').value =
     '';
 
-
   $('#description').value =
     '';
-
 
   $('#status').textContent =
     'Foto cargada. Completa los datos del artículo y guárdalo.';
 
-
   $('#save').disabled =
     false;
-
 }
 
 
 /* =========================================================
-   GUARDAR NUEVO ARTÍCULO
-========================================================= */
+   GUARDAR ARTÍCULO
+   ========================================================= */
 
 async function saveItem() {
-
 
   const file =
     $('#file')
       ?.files?.[0];
-
 
   if (!file) {
 
@@ -2705,17 +2518,14 @@ async function saveItem() {
       .value
       .trim();
 
-
   const category =
     $('#category')
       .value;
-
 
   const color =
     $('#color')
       .value
       .trim();
-
 
   const description =
     $('#description')
@@ -2732,7 +2542,6 @@ async function saveItem() {
     return;
   }
 
-
   if (!category) {
 
     toast(
@@ -2742,7 +2551,6 @@ async function saveItem() {
     return;
   }
 
-
   if (!color) {
 
     toast(
@@ -2751,7 +2559,6 @@ async function saveItem() {
 
     return;
   }
-
 
   if (
     file.size >
@@ -2769,30 +2576,25 @@ async function saveItem() {
   const formData =
     new FormData();
 
-
   formData.append(
     'image',
     file
   );
-
 
   formData.append(
     'name',
     name
   );
 
-
   formData.append(
     'category',
     category
   );
 
-
   formData.append(
     'color',
     color
   );
-
 
   formData.append(
     'description',
@@ -2803,7 +2605,6 @@ async function saveItem() {
   const saveButton =
     $('#save');
 
-
   if (!saveButton) {
     return;
   }
@@ -2812,17 +2613,14 @@ async function saveItem() {
   saveButton.disabled =
     true;
 
-
   saveButton.textContent =
     'GUARDANDO...';
-
 
   $('#status').textContent =
     'Guardando en Google Drive y Google Sheets...';
 
 
   try {
-
 
     const response =
       await fetch(
@@ -2833,31 +2631,18 @@ async function saveItem() {
         }
       );
 
-
     const text =
       await response.text();
 
-
     let data;
 
-
     try {
-
       data =
         JSON.parse(text);
-
     } catch {
-
-      console.error(
-        'Respuesta recibida:',
-        text
-      );
-
-
       throw new Error(
         'El servidor devolvió una respuesta no válida.'
       );
-
     }
 
 
@@ -2867,7 +2652,6 @@ async function saveItem() {
         data.error ||
         'No se pudo guardar.'
       );
-
     }
 
 
@@ -2879,7 +2663,6 @@ async function saveItem() {
       throw new Error(
         'El servidor no devolvió correctamente el artículo guardado.'
       );
-
     }
 
 
@@ -2887,14 +2670,11 @@ async function saveItem() {
       data.item
     );
 
-
     state.filter =
       'Todas';
 
-
     state.search =
       '';
-
 
     toast(
       'Artículo guardado correctamente.'
@@ -2915,26 +2695,21 @@ async function saveItem() {
 
   } catch (error) {
 
-
     console.error(
       'Error guardando artículo:',
       error
     );
-
 
     toast(
       error.message ||
       'No se pudo guardar.'
     );
 
-
     saveButton.disabled =
       false;
 
-
     saveButton.textContent =
       'GUARDAR ARTÍCULO';
-
 
     $('#status').textContent =
       '';
@@ -2945,57 +2720,1734 @@ async function saveItem() {
 
 
 /* =========================================================
-   LOOKS
-========================================================= */
+   MIS LOOKS / CREAR LOOK
+   ========================================================= */
 
 function renderLooks() {
+
+  const tops =
+    state.items.filter(
+      item =>
+        [
+          'Busos',
+          'Camisas',
+          'Chaquetas'
+        ].includes(
+          item.category
+        )
+    );
+
+  const bottoms =
+    state.items.filter(
+      item =>
+        [
+          'Pantalones',
+          'Jeans',
+          'Faldas'
+        ].includes(
+          item.category
+        )
+    );
+
+  const onePieces =
+    state.items.filter(
+      item =>
+        item.category ===
+        'Vestidos'
+    );
+
+  const shoes =
+    state.items.filter(
+      item =>
+        item.category ===
+        'Zapatos'
+    );
+
+  const bags =
+    state.items.filter(
+      item =>
+        item.category ===
+        'Bolsos'
+    );
+
+  const accessories =
+    state.items.filter(
+      item =>
+        item.category ===
+        'Accesorios'
+    );
 
 
   $('#looks').innerHTML = `
 
-    <h1>
-      MIS LOOKS
-    </h1>
+    <div class="looks-header">
 
+      <div>
 
-    <p class="subtitle">
+        <h1>
+          MIS LOOKS
+        </h1>
 
-      Aquí construiremos el
-      creador de looks con
-      tus artículos.
+        <p class="subtitle">
+          Crea, guarda y consulta
+          tus combinaciones.
+        </p>
 
-    </p>
-
-
-    <div
-      class="
-        panel
-        look-placeholder
-      ">
-
+      </div>
 
       <button
-        class="btn"
-        data-view="ropa">
+        class="btn secondary"
+        data-view="home">
 
-        VER MI ROPA
+        VOLVER
 
       </button>
 
+    </div>
+
+
+    <!-- =================================================
+         LOOKS GUARDADOS
+         ================================================= -->
+
+    ${renderSavedLooks()}
+
+
+    <!-- =================================================
+         CREAR LOOK
+         ================================================= -->
+
+    <div class="panel">
+
+      <div class="look-section-title">
+
+        <strong>
+          CREAR LOOK
+        </strong>
+
+        <span>
+          Combina las prendas de tu closet.
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <!-- =================================================
+         LOOK ACTUAL
+         ================================================= -->
+
+    <div class="panel look-preview-panel">
+
+      <div class="look-section-title">
+
+        <strong>
+          TU LOOK
+        </strong>
+
+        <span>
+          Selecciona los artículos
+          que quieres combinar.
+        </span>
+
+      </div>
+
+      <div
+        id="look-preview"
+        class="look-preview">
+
+        ${renderLookPreview()}
+
+      </div>
+
+    </div>
+
+
+    <!-- =================================================
+         PARTE SUPERIOR
+         ================================================= -->
+
+    <div class="panel">
+
+      <div class="look-section-title">
+
+        <strong>
+          PARTE SUPERIOR
+        </strong>
+
+        <span>
+          Busos, camisas o chaquetas
+        </span>
+
+      </div>
+
+      ${renderLookSelector(
+        tops,
+        'top'
+      )}
+
+    </div>
+
+
+    <!-- =================================================
+         PARTE INFERIOR
+         ================================================= -->
+
+    <div class="panel">
+
+      <div class="look-section-title">
+
+        <strong>
+          PARTE INFERIOR
+        </strong>
+
+        <span>
+          Pantalón, jean o falda
+        </span>
+
+      </div>
+
+      ${renderLookSelector(
+        bottoms,
+        'bottom'
+      )}
+
+    </div>
+
+
+    <!-- =================================================
+         VESTIDO
+         ================================================= -->
+
+    <div class="panel">
+
+      <div class="look-section-title">
+
+        <strong>
+          VESTIDO
+        </strong>
+
+        <span>
+          Alternativa de una sola pieza
+        </span>
+
+      </div>
+
+      ${renderLookSelector(
+        onePieces,
+        'onePiece'
+      )}
+
+    </div>
+
+
+    <!-- =================================================
+         ZAPATOS
+         ================================================= -->
+
+    <div class="panel">
+
+      <div class="look-section-title">
+
+        <strong>
+          ZAPATOS
+        </strong>
+
+      </div>
+
+      ${renderLookSelector(
+        shoes,
+        'shoes'
+      )}
+
+    </div>
+
+
+    <!-- =================================================
+         BOLSO
+         ================================================= -->
+
+    <div class="panel">
+
+      <div class="look-section-title">
+
+        <strong>
+          BOLSO
+        </strong>
+
+      </div>
+
+      ${renderLookSelector(
+        bags,
+        'bag'
+      )}
+
+    </div>
+
+
+    <!-- =================================================
+         ACCESORIOS
+         ================================================= -->
+
+    <div class="panel">
+
+      <div class="look-section-title">
+
+        <strong>
+          ACCESORIOS
+        </strong>
+
+        <span>
+          Puedes seleccionar varios.
+        </span>
+
+      </div>
+
+      ${renderLookSelector(
+        accessories,
+        'accessories',
+        true
+      )}
+
+    </div>
+
+
+    <!-- =================================================
+         ACCIONES
+         ================================================= -->
+
+    <div class="look-actions">
+
+      <button
+        class="btn secondary"
+        id="clear-look">
+
+        LIMPIAR LOOK
+
+      </button>
+
+      <button
+        class="btn"
+        id="complete-look">
+
+        COMPLETAR LOOK
+
+      </button>
 
     </div>
 
   `;
 
+
+  /* =====================================================
+     SELECCIÓN DE ARTÍCULOS
+     ===================================================== */
+
+  document
+    .querySelectorAll(
+      '[data-look-select]'
+    )
+    .forEach(card => {
+
+      card.addEventListener(
+        'click',
+        () => {
+
+          selectLookItem(
+            card.dataset.lookSelect,
+            card.dataset.lookSlot
+          );
+
+        }
+      );
+
+    });
+
+
+  /* =====================================================
+     LIMPIAR LOOK
+     ===================================================== */
+
+  $('#clear-look')
+    ?.addEventListener(
+      'click',
+      () => {
+
+        state.look = {
+          top: null,
+          bottom: null,
+          onePiece: null,
+          shoes: null,
+          bag: null,
+          accessories: []
+        };
+
+        renderLooks();
+
+      }
+    );
+
+
+  /* =====================================================
+     COMPLETAR LOOK
+     ===================================================== */
+
+  $('#complete-look')
+    ?.addEventListener(
+      'click',
+      saveLook
+    );
+
 }
 
 
 /* =========================================================
+   MOSTRAR LOOKS GUARDADOS
+   ========================================================= */
+
+function renderSavedLooks() {
+
+  if (
+    !Array.isArray(state.looks) ||
+    state.looks.length === 0
+  ) {
+
+    return `
+
+      <div class="panel saved-looks-panel">
+
+        <div class="look-section-title">
+
+          <strong>
+            MIS LOOKS GUARDADOS
+          </strong>
+
+          <span>
+            Todavía no tienes looks guardados.
+          </span>
+
+        </div>
+
+      </div>
+
+    `;
+  }
+
+
+  return `
+
+    <div class="
+      panel
+      saved-looks-panel
+    ">
+
+      <div class="look-section-title">
+
+        <strong>
+          MIS LOOKS GUARDADOS
+        </strong>
+
+        <span>
+          Aquí encontrarás las combinaciones
+          que hayas guardado.
+        </span>
+
+      </div>
+
+      <div class="saved-looks-grid">
+
+        ${state.looks
+          .map(
+            look =>
+              renderSavedLookCard(
+                look
+              )
+          )
+          .join('')}
+
+      </div>
+
+    </div>
+
+  `;
+}
+
+
+/* =========================================================
+   TARJETA DE LOOK GUARDADO
+   ========================================================= */
+
+function renderSavedLookCard(look) {
+
+  const selectedItems =
+    getItemsFromLook(look);
+
+
+  return `
+
+    <div
+      class="saved-look-card">
+
+      <div class="saved-look-header">
+
+        <div>
+
+          <div class="saved-look-name">
+
+            ${esc(
+              look.name ||
+              'LOOK SIN NOMBRE'
+            )}
+
+          </div>
+
+          ${
+            look.date
+              ? `
+                <div class="saved-look-date">
+                  ${esc(
+                    formatDate(
+                      look.date
+                    )
+                  )}
+                </div>
+              `
+              : ''
+          }
+
+        </div>
+
+      </div>
+
+
+      <div class="saved-look-items">
+
+        ${
+          selectedItems.length
+
+          ? selectedItems
+              .map(
+                item =>
+                  renderSavedLookItem(
+                    item
+                  )
+              )
+              .join('')
+
+          : `
+              <div class="empty">
+                Artículos no disponibles.
+              </div>
+            `
+        }
+
+      </div>
+
+
+      <div class="saved-look-actions">
+
+        <button
+          class="btn secondary"
+          data-load-look="${esc(
+            look.id
+          )}">
+
+          USAR LOOK
+
+        </button>
+
+        <button
+          class="btn-delete"
+          data-delete-look="${esc(
+            look.id
+          )}">
+
+          ELIMINAR
+
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+}
+
+
+/* =========================================================
+   ARTÍCULO DE LOOK GUARDADO
+   ========================================================= */
+
+function renderSavedLookItem(item) {
+
+  const imageUrl =
+    getImageUrl(item);
+
+  return `
+
+    <div class="saved-look-item">
+
+      ${
+        imageUrl
+
+        ? `
+
+          <img
+            src="${esc(imageUrl)}"
+            alt="${esc(
+              item.name ||
+              'Artículo'
+            )}"
+            loading="lazy"
+          >
+
+        `
+
+        : `
+
+          <div
+            class="item-image-empty">
+
+            Sin imagen
+
+          </div>
+
+        `
+      }
+
+      <span>
+        ${esc(
+          item.name ||
+          'Artículo'
+        )}
+      </span>
+
+    </div>
+
+  `;
+}
+
+
+/* =========================================================
+   OBTENER ARTÍCULOS DE UN LOOK
+   ========================================================= */
+
+function getItemsFromLook(look) {
+
+  if (!look) {
+    return [];
+  }
+
+
+  const result = [];
+
+  const addItemById = id => {
+
+    if (!id) {
+      return;
+    }
+
+    const item =
+      state.items.find(
+        current =>
+          String(current.id) ===
+          String(id)
+      );
+
+    if (item) {
+      result.push(item);
+    }
+
+  };
+
+
+  addItemById(
+    look.top
+  );
+
+  addItemById(
+    look.bottom
+  );
+
+  addItemById(
+    look.onePiece
+  );
+
+  addItemById(
+    look.shoes
+  );
+
+  addItemById(
+    look.bag
+  );
+
+
+  const accessories =
+    parseAccessories(
+      look.accessories
+    );
+
+  accessories.forEach(
+    id =>
+      addItemById(id)
+  );
+
+
+  return result;
+}
+
+
+/* =========================================================
+   ACCESORIOS
+   ========================================================= */
+
+function parseAccessories(value) {
+
+  if (Array.isArray(value)) {
+
+    return value
+      .map(item => {
+
+        if (
+          typeof item ===
+          'object'
+        ) {
+          return item.id;
+        }
+
+        return item;
+
+      })
+      .filter(Boolean);
+  }
+
+
+  if (
+    typeof value ===
+    'string'
+  ) {
+
+    const clean =
+      value.trim();
+
+    if (!clean) {
+      return [];
+    }
+
+
+    try {
+
+      const parsed =
+        JSON.parse(clean);
+
+      if (Array.isArray(parsed)) {
+
+        return parsed
+          .map(item => {
+
+            if (
+              typeof item ===
+              'object'
+            ) {
+              return item.id;
+            }
+
+            return item;
+
+          })
+          .filter(Boolean);
+      }
+
+    } catch {
+      // Continuar con formato separado por coma
+    }
+
+
+    return clean
+      .split(',')
+      .map(
+        value =>
+          value.trim()
+      )
+      .filter(Boolean);
+  }
+
+
+  return [];
+}
+
+
+/* =========================================================
+   FECHA
+   ========================================================= */
+
+function formatDate(value) {
+
+  if (!value) {
+    return '';
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString(
+    'es-CO',
+    {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }
+  );
+}
+
+
+/* =========================================================
+   SELECTOR DE ARTÍCULOS PARA LOOK
+   ========================================================= */
+
+function renderLookSelector(
+  items,
+  slot,
+  multiple = false
+) {
+
+  if (
+    !Array.isArray(items) ||
+    !items.length
+  ) {
+
+    return `
+
+      <div class="empty">
+
+        No tienes artículos
+        disponibles en esta categoría.
+
+      </div>
+
+    `;
+  }
+
+
+  return `
+
+    <div class="look-items-grid">
+
+      ${items
+        .map(item => {
+
+          const imageUrl =
+            getImageUrl(item);
+
+          let selected =
+            false;
+
+
+          if (multiple) {
+
+            selected =
+              state.look.accessories
+                .some(
+                  selectedItem =>
+                    String(
+                      selectedItem.id
+                    ) ===
+                    String(item.id)
+                );
+
+          } else {
+
+            selected =
+              state.look[slot] &&
+              String(
+                state.look[slot].id
+              ) ===
+              String(item.id);
+
+          }
+
+
+          return `
+
+            <div
+              class="
+                look-item
+                ${selected
+                  ? 'selected'
+                  : ''}
+              "
+              data-look-select="${esc(
+                item.id
+              )}"
+              data-look-slot="${esc(
+                slot
+              )}">
+
+              <div class="look-item-image">
+
+                ${
+                  imageUrl
+
+                  ? `
+
+                    <img
+                      src="${esc(
+                        imageUrl
+                      )}"
+                      alt="${esc(
+                        item.name ||
+                        'Artículo'
+                      )}"
+                      loading="lazy"
+                    >
+
+                  `
+
+                  : `
+
+                    <div
+                      class="
+                        item-image-empty
+                      ">
+
+                      Sin imagen
+
+                    </div>
+
+                  `
+                }
+
+
+                ${
+                  selected
+
+                  ? `
+
+                    <div
+                      class="
+                        look-selected
+                      ">
+
+                      ✓
+
+                    </div>
+
+                  `
+
+                  : ''
+
+                }
+
+              </div>
+
+
+              <div class="look-item-info">
+
+                <strong>
+
+                  ${esc(
+                    item.name ||
+                    'Sin nombre'
+                  )}
+
+                </strong>
+
+                <span>
+
+                  ${esc(
+                    item.color ||
+                    ''
+                  )}
+
+                </span>
+
+              </div>
+
+            </div>
+
+          `;
+
+        })
+        .join('')}
+
+    </div>
+
+  `;
+}
+
+
+/* =========================================================
+   SELECCIONAR ARTÍCULO PARA LOOK
+   ========================================================= */
+
+function selectLookItem(
+  id,
+  slot
+) {
+
+  const item =
+    state.items.find(
+      currentItem =>
+        String(currentItem.id) ===
+        String(id)
+    );
+
+  if (!item) {
+    return;
+  }
+
+
+  /* =====================================================
+     ACCESORIOS - MÚLTIPLES
+     ===================================================== */
+
+  if (
+    slot === 'accessories'
+  ) {
+
+    const exists =
+      state.look.accessories
+        .some(
+          selectedItem =>
+            String(
+              selectedItem.id
+            ) ===
+            String(item.id)
+        );
+
+
+    if (exists) {
+
+      state.look.accessories =
+        state.look.accessories.filter(
+          selectedItem =>
+            String(
+              selectedItem.id
+            ) !==
+            String(item.id)
+        );
+
+    } else {
+
+      state.look.accessories.push(
+        item
+      );
+
+    }
+
+
+    renderLooks();
+
+    return;
+  }
+
+
+  /* =====================================================
+     VESTIDO
+     ===================================================== */
+
+  if (
+    slot === 'onePiece'
+  ) {
+
+    const alreadySelected =
+      state.look.onePiece &&
+      String(
+        state.look.onePiece.id
+      ) ===
+      String(item.id);
+
+
+    state.look.onePiece =
+      alreadySelected
+        ? null
+        : item;
+
+
+    /*
+      Un vestido no puede combinarse
+      con parte superior e inferior.
+    */
+
+    if (
+      state.look.onePiece
+    ) {
+
+      state.look.top =
+        null;
+
+      state.look.bottom =
+        null;
+
+    }
+
+
+    renderLooks();
+
+    return;
+  }
+
+
+  /* =====================================================
+     SUPERIOR / INFERIOR / ZAPATOS / BOLSO
+     ===================================================== */
+
+  const alreadySelected =
+    state.look[slot] &&
+    String(
+      state.look[slot].id
+    ) ===
+    String(item.id);
+
+
+  state.look[slot] =
+    alreadySelected
+      ? null
+      : item;
+
+
+  /*
+    Si se selecciona parte superior
+    o inferior, se elimina vestido.
+  */
+
+  if (
+    state.look.top ||
+    state.look.bottom
+  ) {
+
+    state.look.onePiece =
+      null;
+
+  }
+
+
+  renderLooks();
+
+}
+
+
+/* =========================================================
+   VISTA PREVIA DEL LOOK
+   ========================================================= */
+
+function renderLookPreview() {
+
+  const selected = [];
+
+
+  if (state.look.top) {
+    selected.push(
+      state.look.top
+    );
+  }
+
+  if (state.look.bottom) {
+    selected.push(
+      state.look.bottom
+    );
+  }
+
+  if (state.look.onePiece) {
+    selected.push(
+      state.look.onePiece
+    );
+  }
+
+  if (state.look.shoes) {
+    selected.push(
+      state.look.shoes
+    );
+  }
+
+  if (state.look.bag) {
+    selected.push(
+      state.look.bag
+    );
+  }
+
+  if (
+    Array.isArray(
+      state.look.accessories
+    )
+  ) {
+
+    selected.push(
+      ...state.look.accessories
+    );
+
+  }
+
+
+  if (!selected.length) {
+
+    return `
+
+      <div class="look-empty">
+
+        <div class="look-empty-icon">
+          +
+        </div>
+
+        <strong>
+          TU LOOK ESTÁ VACÍO
+        </strong>
+
+        <span>
+          Selecciona artículos
+          para comenzar.
+        </span>
+
+      </div>
+
+    `;
+  }
+
+
+  return `
+
+    <div class="selected-look-grid">
+
+      ${selected
+        .map(item => {
+
+          const imageUrl =
+            getImageUrl(item);
+
+          return `
+
+            <div
+              class="selected-look-item">
+
+              ${
+                imageUrl
+
+                ? `
+
+                  <img
+                    src="${esc(
+                      imageUrl
+                    )}"
+                    alt="${esc(
+                      item.name ||
+                      'Artículo'
+                    )}"
+                  >
+
+                `
+
+                : `
+
+                  <div
+                    class="
+                      item-image-empty
+                    ">
+
+                    Sin imagen
+
+                  </div>
+
+                `
+              }
+
+              <span>
+
+                ${esc(
+                  item.name ||
+                  'Artículo'
+                )}
+
+              </span>
+
+            </div>
+
+          `;
+
+        })
+        .join('')}
+
+    </div>
+
+  `;
+}
+
+
+/* =========================================================
+   GUARDAR LOOK
+   ========================================================= */
+
+async function saveLook() {
+
+  const top =
+    state.look.top
+      ? state.look.top.id
+      : null;
+
+  const bottom =
+    state.look.bottom
+      ? state.look.bottom.id
+      : null;
+
+  const onePiece =
+    state.look.onePiece
+      ? state.look.onePiece.id
+      : null;
+
+  const shoes =
+    state.look.shoes
+      ? state.look.shoes.id
+      : null;
+
+  const bag =
+    state.look.bag
+      ? state.look.bag.id
+      : null;
+
+  const accessories =
+    state.look.accessories.map(
+      item => item.id
+    );
+
+
+  /* =====================================================
+     VALIDAR
+     ===================================================== */
+
+  if (
+    !top &&
+    !bottom &&
+    !onePiece &&
+    !shoes &&
+    !bag &&
+    accessories.length === 0
+  ) {
+
+    toast(
+      'Selecciona al menos un artículo para crear el look.'
+    );
+
+    return;
+  }
+
+
+  /* =====================================================
+     NOMBRE
+     ===================================================== */
+
+  const name =
+    prompt(
+      '¿Cómo quieres llamar este look?'
+    );
+
+  if (name === null) {
+    return;
+  }
+
+  const cleanName =
+    name.trim();
+
+  if (!cleanName) {
+
+    toast(
+      'Escribe un nombre para el look.'
+    );
+
+    return;
+  }
+
+
+  const button =
+    $('#complete-look');
+
+  if (button) {
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      'GUARDANDO...';
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        '/api/looks',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+
+          body:
+            JSON.stringify({
+              name: cleanName,
+              top,
+              bottom,
+              onePiece,
+              shoes,
+              bag,
+              accessories
+            })
+        }
+      );
+
+
+    const text =
+      await response.text();
+
+    let data;
+
+    try {
+      data =
+        JSON.parse(text);
+    } catch {
+      throw new Error(
+        'El servidor devolvió una respuesta no válida.'
+      );
+    }
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        'No se pudo guardar el look.'
+      );
+    }
+
+
+    if (
+      !data.look ||
+      !data.look.id
+    ) {
+
+      throw new Error(
+        'El servidor no devolvió correctamente el look guardado.'
+      );
+    }
+
+
+    if (
+      !Array.isArray(
+        state.looks
+      )
+    ) {
+
+      state.looks = [];
+
+    }
+
+
+    state.looks.unshift(
+      data.look
+    );
+
+
+    toast(
+      'Look guardado correctamente.'
+    );
+
+
+    /* =================================================
+       LIMPIAR CREADOR
+       ================================================= */
+
+    state.look = {
+      top: null,
+      bottom: null,
+      onePiece: null,
+      shoes: null,
+      bag: null,
+      accessories: []
+    };
+
+
+    renderLooks();
+
+
+  } catch (error) {
+
+    console.error(
+      'Error guardando look:',
+      error
+    );
+
+    toast(
+      error.message ||
+      'No se pudo guardar el look.'
+    );
+
+
+    if (button) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        'COMPLETAR LOOK';
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   USAR LOOK GUARDADO
+   ========================================================= */
+
+function loadSavedLook(id) {
+
+  const look =
+    state.looks.find(
+      current =>
+        String(current.id) ===
+        String(id)
+    );
+
+  if (!look) {
+
+    toast(
+      'No se encontró el look.'
+    );
+
+    return;
+  }
+
+
+  const findItem = itemId => {
+
+    if (!itemId) {
+      return null;
+    }
+
+    return state.items.find(
+      item =>
+        String(item.id) ===
+        String(itemId)
+    ) || null;
+
+  };
+
+
+  state.look = {
+
+    top:
+      findItem(
+        look.top
+      ),
+
+    bottom:
+      findItem(
+        look.bottom
+      ),
+
+    onePiece:
+      findItem(
+        look.onePiece
+      ),
+
+    shoes:
+      findItem(
+        look.shoes
+      ),
+
+    bag:
+      findItem(
+        look.bag
+      ),
+
+    accessories:
+      parseAccessories(
+        look.accessories
+      )
+        .map(
+          itemId =>
+            findItem(itemId)
+        )
+        .filter(Boolean)
+
+  };
+
+
+  toast(
+    'Look cargado en el creador.'
+  );
+
+  renderLooks();
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+
+}
+
+
+/* =========================================================
+   ELIMINAR LOOK
+   ========================================================= */
+
+async function deleteLook(id) {
+
+  const look =
+    state.looks.find(
+      current =>
+        String(current.id) ===
+        String(id)
+    );
+
+  if (!look) {
+
+    toast(
+      'No se encontró el look.'
+    );
+
+    return;
+  }
+
+
+  const confirmed =
+    confirm(
+      `¿Quieres eliminar el look "${look.name}"?`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/looks/${encodeURIComponent(id)}`,
+        {
+          method: 'DELETE'
+        }
+      );
+
+
+    const text =
+      await response.text();
+
+    let data;
+
+    try {
+      data =
+        JSON.parse(text);
+    } catch {
+      throw new Error(
+        'El servidor devolvió una respuesta no válida.'
+      );
+    }
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        'No se pudo eliminar el look.'
+      );
+    }
+
+
+    state.looks =
+      state.looks.filter(
+        current =>
+          String(current.id) !==
+          String(id)
+      );
+
+
+    toast(
+      'Look eliminado.'
+    );
+
+    renderLooks();
+
+  } catch (error) {
+
+    console.error(
+      'Error eliminando look:',
+      error
+    );
+
+    toast(
+      error.message ||
+      'No se pudo eliminar el look.'
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   EVENTOS DE LOOKS
+   ========================================================= */
+
+document.addEventListener(
+  'click',
+  event => {
+
+    const loadButton =
+      event.target.closest(
+        '[data-load-look]'
+      );
+
+    if (loadButton) {
+
+      event.stopPropagation();
+
+      loadSavedLook(
+        loadButton.dataset.loadLook
+      );
+
+      return;
+    }
+
+
+    const deleteButton =
+      event.target.closest(
+        '[data-delete-look]'
+      );
+
+    if (deleteButton) {
+
+      event.stopPropagation();
+
+      deleteLook(
+        deleteButton.dataset.deleteLook
+      );
+
+      return;
+    }
+
+  }
+);
+
+
+/* =========================================================
    CONFIGURACIÓN
-========================================================= */
+   ========================================================= */
 
 function renderConfig() {
-
 
   $('#config').innerHTML = `
 
@@ -3003,22 +4455,16 @@ function renderConfig() {
       CONFIGURACIÓN
     </h1>
 
-
     <p class="subtitle">
-
       Configuración básica
       de MI CLOSET DIGITAL.
-
     </p>
 
-
     <div class="panel">
-
 
       <b>
         Almacenamiento
       </b>
-
 
       <p class="small-note">
 
@@ -3028,69 +4474,26 @@ function renderConfig() {
 
       </p>
 
-
     </div>
 
   `;
-
-}
-
-
-/* =========================================================
-   TOAST
-========================================================= */
-
-function toast(message) {
-
-
-  const element =
-    $('#toast');
-
-
-  if (!element) {
-
-    console.log(message);
-
-    return;
-  }
-
-
-  element.textContent =
-    message;
-
-
-  element.classList.add(
-    'show'
-  );
-
-
-  setTimeout(
-    () => {
-
-      element.classList.remove(
-        'show'
-      );
-
-    },
-    2200
-  );
-
 }
 
 
 /* =========================================================
    INICIO DE LA APLICACIÓN
-========================================================= */
+   ========================================================= */
 
 injectDetailStyles();
 
-
 loadItems();
+
+loadLooks();
 
 
 /* =========================================================
    SERVICE WORKER / PWA
-========================================================= */
+   ========================================================= */
 
 if (
   'serviceWorker' in navigator

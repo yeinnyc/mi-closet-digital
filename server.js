@@ -397,11 +397,11 @@ app.post(
 
 
       /*
-        La imagen es opcional al editar.
-
-        Si el usuario seleccionó una nueva imagen,
-        la enviamos también a Google Apps Script.
-      */
+       * La imagen es opcional al editar.
+       *
+       * Si el usuario seleccionó una nueva imagen,
+       * la enviamos también a Google Apps Script.
+       */
 
       if (req.file) {
 
@@ -516,6 +516,347 @@ app.delete(
         error:
           error.message ||
           'No se pudo eliminar el artículo.'
+
+      });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   GET /api/looks
+   OBTENER TODOS LOS LOOKS
+========================================================= */
+
+app.get(
+  '/api/looks',
+  async (_req, res) => {
+
+    try {
+
+      const result =
+        await callGoogleApi({
+          action: 'listLooks'
+        });
+
+
+      res.json({
+
+        ok: true,
+
+        looks: result.looks || []
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        'Error obteniendo looks:',
+        error
+      );
+
+
+      res.status(500).json({
+
+        ok: false,
+
+        error:
+          error.message ||
+          'No se pudieron cargar los looks.'
+
+      });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   POST /api/looks
+   CREAR LOOK
+========================================================= */
+
+app.post(
+  '/api/looks',
+  async (req, res) => {
+
+    try {
+
+      const {
+        name,
+        top,
+        bottom,
+        onePiece,
+        shoes,
+        bag,
+        accessories
+      } = req.body;
+
+
+      if (!name || !name.trim()) {
+
+        return res.status(400).json({
+
+          ok: false,
+
+          error:
+            'El nombre del look es obligatorio.'
+
+        });
+
+      }
+
+
+      const result =
+        await callGoogleApi({
+
+          action: 'createLook',
+
+          name:
+            name.trim(),
+
+          top:
+            top || '',
+
+          bottom:
+            bottom || '',
+
+          onePiece:
+            onePiece || '',
+
+          shoes:
+            shoes || '',
+
+          bag:
+            bag || '',
+
+          accessories:
+            Array.isArray(accessories)
+              ? accessories
+              : []
+
+        });
+
+
+      res.status(201).json({
+
+        ok: true,
+
+        look: result.look
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        'Error creando look:',
+        error
+      );
+
+
+      res.status(500).json({
+
+        ok: false,
+
+        error:
+          error.message ||
+          'No se pudo crear el look.'
+
+      });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   POST /api/looks/update
+   ACTUALIZAR LOOK
+========================================================= */
+
+app.post(
+  '/api/looks/update',
+  async (req, res) => {
+
+    try {
+
+      const {
+        id,
+        name,
+        top,
+        bottom,
+        onePiece,
+        shoes,
+        bag,
+        accessories
+      } = req.body;
+
+
+      if (!id) {
+
+        return res.status(400).json({
+
+          ok: false,
+
+          error:
+            'Falta el ID del look.'
+
+        });
+
+      }
+
+
+      if (!name || !name.trim()) {
+
+        return res.status(400).json({
+
+          ok: false,
+
+          error:
+            'El nombre del look es obligatorio.'
+
+        });
+
+      }
+
+
+      const result =
+        await callGoogleApi({
+
+          action: 'updateLook',
+
+          id:
+            id.trim(),
+
+          name:
+            name.trim(),
+
+          top:
+            top || '',
+
+          bottom:
+            bottom || '',
+
+          onePiece:
+            onePiece || '',
+
+          shoes:
+            shoes || '',
+
+          bag:
+            bag || '',
+
+          accessories:
+            Array.isArray(accessories)
+              ? accessories
+              : []
+
+        });
+
+
+      res.json({
+
+        ok: true,
+
+        look: result.look
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        'Error actualizando look:',
+        error
+      );
+
+
+      res.status(500).json({
+
+        ok: false,
+
+        error:
+          error.message ||
+          'No se pudo actualizar el look.'
+
+      });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   DELETE /api/looks/:id
+   ELIMINAR LOOK
+========================================================= */
+
+app.delete(
+  '/api/looks/:id',
+  async (req, res) => {
+
+    try {
+
+      const id =
+        req.params.id;
+
+
+      if (!id) {
+
+        return res.status(400).json({
+
+          ok: false,
+
+          error:
+            'Falta el ID del look.'
+
+        });
+
+      }
+
+
+      const result =
+        await callGoogleApi({
+
+          action: 'deleteLook',
+
+          id: id
+
+        });
+
+
+      res.json({
+
+        ok: true,
+
+        message:
+          result.message ||
+          'Look eliminado.'
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        'Error eliminando look:',
+        error
+      );
+
+
+      res.status(500).json({
+
+        ok: false,
+
+        error:
+          error.message ||
+          'No se pudo eliminar el look.'
 
       });
 
