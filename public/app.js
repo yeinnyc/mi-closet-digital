@@ -33,17 +33,19 @@ const esc = (value = '') =>
   }[char]));
 
 /* =========================================================
-   ESTILOS DEL DETALLE
+   ESTILOS DEL DETALLE Y EDICIÓN
    ========================================================= */
 
 function injectDetailStyles() {
   if ($('#detail-styles')) return;
 
   const style = document.createElement('style');
+
   style.id = 'detail-styles';
 
   style.textContent = `
-    .detail-overlay {
+    .detail-overlay,
+    .edit-overlay {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,.65);
@@ -160,18 +162,6 @@ function injectDetailStyles() {
       min-width: 120px;
     }
 
-    .edit-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.65);
-      z-index: 10000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      box-sizing: border-box;
-    }
-
     .edit-modal {
       width: min(600px, 100%);
       max-height: 92vh;
@@ -223,7 +213,14 @@ function injectDetailStyles() {
       cursor: pointer;
     }
 
+    .detail-delete {
+      width: 100%;
+      margin-top: 10px;
+      min-height: 38px;
+    }
+
     @media (max-width: 700px) {
+
       .detail-overlay,
       .edit-overlay {
         padding: 10px;
@@ -248,7 +245,7 @@ function injectDetailStyles() {
       }
 
       .detail-info {
-        padding: 25px 20px 25px;
+        padding: 25px 20px;
       }
 
       .detail-title {
@@ -275,6 +272,7 @@ function injectDetailStyles() {
 async function loadItems() {
   try {
     const response = await fetch('/api/items');
+
     const data = await response.json();
 
     if (!response.ok) {
@@ -292,6 +290,7 @@ async function loadItems() {
     render();
 
   } catch (error) {
+
     console.error(
       'Error cargando artículos:',
       error
@@ -313,6 +312,7 @@ async function loadItems() {
    ========================================================= */
 
 function setView(view, filter) {
+
   state.view = view;
 
   if (filter) {
@@ -333,6 +333,7 @@ document.addEventListener('click', event => {
     event.target.closest('[data-view]');
 
   if (viewButton) {
+
     setView(
       viewButton.dataset.view,
       viewButton.dataset.filter
@@ -345,6 +346,7 @@ document.addEventListener('click', event => {
     event.target.closest('[data-delete]');
 
   if (deleteButton) {
+
     event.stopPropagation();
 
     deleteItem(
@@ -358,6 +360,7 @@ document.addEventListener('click', event => {
     event.target.closest('[data-item-id]');
 
   if (itemCard) {
+
     openDetail(
       itemCard.dataset.itemId
     );
@@ -365,7 +368,7 @@ document.addEventListener('click', event => {
 });
 
 /* =========================================================
-   RENDER GENERAL
+   RENDER
    ========================================================= */
 
 function render() {
@@ -382,6 +385,7 @@ function render() {
       $('#' + id);
 
     if (section) {
+
       section.classList.toggle(
         'hidden',
         state.view !== id
@@ -756,7 +760,11 @@ function openDetail(id) {
     );
 
   if (!item) {
-    toast('No se encontró el artículo.');
+
+    toast(
+      'No se encontró el artículo.'
+    );
+
     return;
   }
 
@@ -865,18 +873,14 @@ function openDetail(id) {
 
           </div>
 
-          <div style="margin-top:10px">
+          <button
+            class="btn-delete detail-delete"
+            id="detail-delete"
+            data-delete="${esc(item.id)}">
 
-            <button
-              class="btn-delete"
-              id="detail-delete"
-              data-delete="${esc(item.id)}">
+            ELIMINAR ARTÍCULO
 
-              ELIMINAR ARTÍCULO
-
-            </button>
-
-          </div>
+          </button>
 
         </div>
 
@@ -885,27 +889,33 @@ function openDetail(id) {
     </div>
   `;
 
-  document.body.appendChild(overlay);
-
-  $('#detail-close').addEventListener(
-    'click',
-    closeDetail
+  document.body.appendChild(
+    overlay
   );
 
-  $('#detail-back').addEventListener(
-    'click',
-    closeDetail
-  );
+  $('#detail-close')
+    .addEventListener(
+      'click',
+      closeDetail
+    );
 
-  $('#detail-edit').addEventListener(
-    'click',
-    () => openEdit(item)
-  );
+  $('#detail-back')
+    .addEventListener(
+      'click',
+      closeDetail
+    );
 
-  $('#detail-delete').addEventListener(
-    'click',
-    () => deleteItem(item.id)
-  );
+  $('#detail-edit')
+    .addEventListener(
+      'click',
+      () => openEdit(item)
+    );
+
+  $('#detail-delete')
+    .addEventListener(
+      'click',
+      () => deleteItem(item.id)
+    );
 
   overlay.addEventListener(
     'click',
@@ -974,7 +984,7 @@ function openEdit(item) {
               >
             `
             : `
-              <span id="edit-no-image">
+              <span>
                 Sin imagen
               </span>
             `
@@ -1089,54 +1099,64 @@ function openEdit(item) {
     </div>
   `;
 
-  document.body.appendChild(overlay);
-
-  $('#edit-cancel').addEventListener(
-    'click',
-    () => overlay.remove()
+  document.body.appendChild(
+    overlay
   );
 
-  $('#edit-file').addEventListener(
-    'change',
-    event => {
+  $('#edit-cancel')
+    .addEventListener(
+      'click',
+      () => overlay.remove()
+    );
 
-      const file =
-        event.target.files[0];
+  $('#edit-file')
+    .addEventListener(
+      'change',
+      event => {
 
-      if (!file) return;
+        const file =
+          event.target.files[0];
 
-      const preview =
-        $('#edit-preview-img');
+        if (!file) return;
 
-      if (preview) {
+        const preview =
+          $('#edit-preview-img');
 
-        preview.src =
-          URL.createObjectURL(file);
-
-      } else {
-
-        const container =
-          document.querySelector(
-            '.edit-preview'
+        const newUrl =
+          URL.createObjectURL(
+            file
           );
 
-        container.innerHTML = `
+        if (preview) {
 
-          <img
-            id="edit-preview-img"
-            src="${URL.createObjectURL(file)}"
-            alt="Nueva imagen"
-          >
+          preview.src =
+            newUrl;
 
-        `;
+        } else {
+
+          const container =
+            document.querySelector(
+              '.edit-preview'
+            );
+
+          container.innerHTML = `
+
+            <img
+              id="edit-preview-img"
+              src="${newUrl}"
+              alt="Nueva imagen"
+            >
+
+          `;
+        }
       }
-    }
-  );
+    );
 
-  $('#edit-save').addEventListener(
-    'click',
-    () => updateItem(item.id)
-  );
+  $('#edit-save')
+    .addEventListener(
+      'click',
+      () => updateItem(item.id)
+    );
 
   overlay.addEventListener(
     'click',
@@ -1151,6 +1171,10 @@ function openEdit(item) {
     }
   );
 }
+
+/* =========================================================
+   ACTUALIZAR ARTÍCULO
+   ========================================================= */
 
 async function updateItem(id) {
 
@@ -1169,91 +1193,282 @@ async function updateItem(id) {
   const file =
     $('#edit-file').files[0];
 
+
+  /* =====================================================
+     VALIDACIONES
+  ===================================================== */
+
   if (!name) {
-    toast('Escribe el nombre del artículo.');
+
+    toast(
+      'Escribe el nombre del artículo.'
+    );
+
     return;
+
   }
+
 
   if (!category) {
-    toast('Selecciona una categoría.');
+
+    toast(
+      'Selecciona una categoría.'
+    );
+
     return;
+
   }
 
+
   if (!color) {
-    toast('Escribe el color del artículo.');
+
+    toast(
+      'Escribe el color del artículo.'
+    );
+
     return;
+
   }
+
+
+  /* =====================================================
+     FORMULARIO
+  ===================================================== */
 
   const formData =
     new FormData();
+
+
+  /*
+    IMPORTANTE:
+    El ID identifica qué artículo vamos a modificar.
+  */
+
+  formData.append(
+    'id',
+    id
+  );
+
 
   formData.append(
     'name',
     name
   );
 
+
   formData.append(
     'category',
     category
   );
+
 
   formData.append(
     'color',
     color
   );
 
+
   formData.append(
     'description',
     description
   );
 
+
+  /*
+    La fotografía es opcional al editar.
+    Si el usuario selecciona una nueva,
+    también se envía.
+  */
+
   if (file) {
+
     formData.append(
       'image',
       file
     );
+
   }
+
+
+  /* =====================================================
+     BOTÓN
+  ===================================================== */
 
   const button =
     $('#edit-save');
 
+
   button.disabled =
     true;
+
 
   button.textContent =
     'GUARDANDO...';
 
+
   $('#edit-status').textContent =
     'Guardando cambios...';
+
+
+  /* =====================================================
+     ENVIAR ACTUALIZACIÓN
+  ===================================================== */
 
   try {
 
     const response =
       await fetch(
-        `/api/items/${encodeURIComponent(id)}`,
+        '/api/items/update',
         {
-          method: 'PUT',
+          method: 'POST',
           body: formData
         }
       );
 
+
     const data =
       await response.json();
 
+
     if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        'No se pudieron guardar los cambios.'
+      );
+
+    }
+
+
+    if (
+      !data.item ||
+      !data.item.id
+    ) {
+
+      throw new Error(
+        'El servidor no devolvió correctamente el artículo actualizado.'
+      );
+
+    }
+
+
+    /* =================================================
+       ACTUALIZAR EL ARTÍCULO EN MEMORIA
+    ================================================= */
+
+    const index =
+      state.items.findIndex(
+        item =>
+          String(item.id) ===
+          String(id)
+      );
+
+
+    if (index !== -1) {
+
+      state.items[index] =
+        data.item;
+
+    }
+
+
+    /* =================================================
+       CERRAR VENTANA
+    ================================================= */
+
+    $('#edit-overlay')?.remove();
+
+
+    /* =================================================
+       MENSAJE
+    ================================================= */
+
+    toast(
+      'Artículo actualizado correctamente.'
+    );
+
+
+    /* =================================================
+       REDIBUJAR APP
+    ================================================= */
+
+    render();
+
+
+  } catch (error) {
+
+    console.error(
+      'Error actualizando artículo:',
+      error
+    );
+
+
+    toast(
+      error.message ||
+      'No se pudieron guardar los cambios.'
+    );
+
+
+    button.disabled =
+      false;
+
+
+    button.textContent =
+      'GUARDAR CAMBIOS';
+
+
+    $('#edit-status').textContent =
+      '';
+
+  }
+
+}
+      );
+
+    const text =
+      await response.text();
+
+    let data;
+
+    try {
+
+      data =
+        JSON.parse(text);
+
+    } catch {
+
+      throw new Error(
+        'El servidor devolvió una respuesta no válida.'
+      );
+    }
+
+    if (!response.ok) {
+
       throw new Error(
         data.error ||
         'No se pudieron guardar los cambios.'
       );
     }
 
+    if (
+      !data.item ||
+      !data.item.id
+    ) {
+
+      throw new Error(
+        'El servidor no devolvió correctamente el artículo actualizado.'
+      );
+    }
+
     const index =
       state.items.findIndex(
         item =>
-          String(item.id) === String(id)
+          String(item.id) ===
+          String(id)
       );
 
     if (index !== -1) {
+
       state.items[index] =
         data.item;
     }
@@ -1298,11 +1513,16 @@ async function deleteItem(id) {
   const item =
     state.items.find(
       currentItem =>
-        String(currentItem.id) === String(id)
+        String(currentItem.id) ===
+        String(id)
     );
 
   if (!item) {
-    toast('No se encontró el artículo.');
+
+    toast(
+      'No se encontró el artículo.'
+    );
+
     return;
   }
 
@@ -1327,6 +1547,7 @@ async function deleteItem(id) {
       await response.json();
 
     if (!response.ok) {
+
       throw new Error(
         data.error ||
         'No se pudo eliminar el artículo.'
@@ -1336,7 +1557,8 @@ async function deleteItem(id) {
     state.items =
       state.items.filter(
         currentItem =>
-          String(currentItem.id) !== String(id)
+          String(currentItem.id) !==
+          String(id)
       );
 
     closeDetail();
@@ -1530,18 +1752,19 @@ function renderAdd() {
         fileInput.files &&
         fileInput.files[0]
       ) {
+
         analyze(
           fileInput.files[0]
         );
       }
-
     }
   );
 
-  $('#save').addEventListener(
-    'click',
-    saveItem
-  );
+  $('#save')
+    .addEventListener(
+      'click',
+      saveItem
+    );
 }
 
 function analyze(image) {
@@ -1550,7 +1773,9 @@ function analyze(image) {
     $('#preview');
 
   preview.src =
-    URL.createObjectURL(image);
+    URL.createObjectURL(
+      image
+    );
 
   preview.style.display =
     'block';
@@ -1578,7 +1803,7 @@ function analyze(image) {
 }
 
 /* =========================================================
-   GUARDAR ARTÍCULO
+   GUARDAR NUEVO ARTÍCULO
    ========================================================= */
 
 async function saveItem() {
@@ -1587,7 +1812,11 @@ async function saveItem() {
     $('#file').files[0];
 
   if (!file) {
-    toast('Selecciona una foto.');
+
+    toast(
+      'Selecciona una foto.'
+    );
+
     return;
   }
 
@@ -1604,17 +1833,29 @@ async function saveItem() {
     $('#description').value.trim();
 
   if (!name) {
-    toast('Escribe el nombre del artículo.');
+
+    toast(
+      'Escribe el nombre del artículo.'
+    );
+
     return;
   }
 
   if (!category) {
-    toast('Selecciona una categoría.');
+
+    toast(
+      'Selecciona una categoría.'
+    );
+
     return;
   }
 
   if (!color) {
-    toast('Escribe el color del artículo.');
+
+    toast(
+      'Escribe el color del artículo.'
+    );
+
     return;
   }
 
@@ -1673,6 +1914,7 @@ async function saveItem() {
       await response.json();
 
     if (!response.ok) {
+
       throw new Error(
         data.error ||
         'No se pudo guardar.'
@@ -1683,6 +1925,7 @@ async function saveItem() {
       !data.item ||
       !data.item.id
     ) {
+
       throw new Error(
         'El servidor no devolvió correctamente el artículo guardado.'
       );
@@ -1787,7 +2030,7 @@ function renderConfig() {
 }
 
 /* =========================================================
-   MENSAJES
+   TOAST
    ========================================================= */
 
 function toast(message) {
@@ -1804,9 +2047,11 @@ function toast(message) {
 
   setTimeout(
     () => {
+
       element.classList.remove(
         'show'
       );
+
     },
     2200
   );
@@ -1820,7 +2065,9 @@ injectDetailStyles();
 
 loadItems();
 
-if ('serviceWorker' in navigator) {
+if (
+  'serviceWorker' in navigator
+) {
 
   window.addEventListener(
     'load',

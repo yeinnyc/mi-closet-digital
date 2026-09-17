@@ -19,7 +19,7 @@ const GOOGLE_APPS_SCRIPT_URL =
 
 /* =========================================================
    CARPETAS
-   ========================================================= */
+========================================================= */
 
 const DATA_DIR = path.join(__dirname, 'data');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
@@ -30,9 +30,10 @@ await fs.mkdir(UPLOADS_DIR, { recursive: true });
 
 /* =========================================================
    MULTER
-   ========================================================= */
+========================================================= */
 
 const upload = multer({
+
   storage: multer.memoryStorage(),
 
   limits: {
@@ -47,17 +48,28 @@ const upload = multer({
       'image/webp'
     ];
 
-    cb(
-      null,
-      allowed.includes(file.mimetype)
-    );
+    if (allowed.includes(file.mimetype)) {
+
+      cb(null, true);
+
+    } else {
+
+      cb(
+        new Error(
+          'Solo se permiten imágenes JPG, PNG o WEBP.'
+        )
+      );
+
+    }
+
   }
+
 });
 
 
 /* =========================================================
-   CONFIGURACIÓN EXPRESS
-   ========================================================= */
+   EXPRESS
+========================================================= */
 
 app.use(
   express.json({
@@ -73,8 +85,8 @@ app.use(
 
 
 /* =========================================================
-   VALIDAR CONEXIÓN CON GOOGLE
-   ========================================================= */
+   VALIDAR GOOGLE APPS SCRIPT
+========================================================= */
 
 function validateGoogleApi() {
 
@@ -83,13 +95,15 @@ function validateGoogleApi() {
     throw new Error(
       'No está configurada la variable GOOGLE_APPS_SCRIPT_URL en Render.'
     );
+
   }
+
 }
 
 
 /* =========================================================
-   LLAMAR GOOGLE APPS SCRIPT
-   ========================================================= */
+   COMUNICACIÓN CON GOOGLE APPS SCRIPT
+========================================================= */
 
 async function callGoogleApi(data) {
 
@@ -105,26 +119,26 @@ async function callGoogleApi(data) {
       },
 
       body: JSON.stringify(data)
+
     }
   );
 
 
-  const text =
-    await response.text();
-
+  const text = await response.text();
 
   let result;
 
+
   try {
 
-    result =
-      JSON.parse(text);
+    result = JSON.parse(text);
 
   } catch {
 
     throw new Error(
       'Google Apps Script devolvió una respuesta no válida.'
     );
+
   }
 
 
@@ -134,6 +148,7 @@ async function callGoogleApi(data) {
       result.error ||
       'Error al comunicarse con Google Apps Script.'
     );
+
   }
 
 
@@ -143,17 +158,19 @@ async function callGoogleApi(data) {
       result.error ||
       'Google Apps Script rechazó la solicitud.'
     );
+
   }
 
 
   return result;
+
 }
 
 
 /* =========================================================
    GET /api/items
-   OBTENER ARTÍCULOS DESDE GOOGLE SHEETS
-   ========================================================= */
+   OBTENER TODOS LOS ARTÍCULOS
+========================================================= */
 
 app.get(
   '/api/items',
@@ -168,10 +185,12 @@ app.get(
 
 
       res.json({
-        ok: true,
-        items: result.items || []
-      });
 
+        ok: true,
+
+        items: result.items || []
+
+      });
 
     } catch (error) {
 
@@ -188,28 +207,26 @@ app.get(
         error:
           error.message ||
           'No se pudieron cargar los artículos.'
+
       });
+
     }
+
   }
 );
 
 
 /* =========================================================
    POST /api/items
-   GUARDAR ARTÍCULO
-   ========================================================= */
+   CREAR ARTÍCULO
+========================================================= */
 
 app.post(
   '/api/items',
   upload.single('image'),
-
   async (req, res) => {
 
     try {
-
-      /* ---------------------------------------------------
-         VALIDAR FOTO
-         --------------------------------------------------- */
 
       if (!req.file) {
 
@@ -217,15 +234,12 @@ app.post(
 
           ok: false,
 
-          error:
-            'La foto es obligatoria.'
+          error: 'La foto es obligatoria.'
+
         });
+
       }
 
-
-      /* ---------------------------------------------------
-         DATOS DEL FORMULARIO
-         --------------------------------------------------- */
 
       const {
         name,
@@ -247,59 +261,47 @@ app.post(
 
           error:
             'Nombre, categoría y color son obligatorios.'
+
         });
+
       }
 
 
-      /* ---------------------------------------------------
-         CONVERTIR FOTO A BASE64
-         --------------------------------------------------- */
-
       const imageBase64 =
-        req.file.buffer.toString(
-          'base64'
-        );
+        req.file.buffer.toString('base64');
 
-
-      /* ---------------------------------------------------
-         ENVIAR A GOOGLE
-         --------------------------------------------------- */
 
       const result =
         await callGoogleApi({
 
           action: 'create',
 
-          name:
-            name.trim(),
+          name: name.trim(),
 
-          category:
-            category.trim(),
+          category: category.trim(),
 
-          color:
-            color.trim(),
+          color: color.trim(),
 
           description:
             (description || '').trim(),
 
           imageBase64:
+
             imageBase64,
 
           imageMimeType:
+
             req.file.mimetype
+
         });
 
-
-      /* ---------------------------------------------------
-         RESPONDER A LA APLICACIÓN
-         --------------------------------------------------- */
 
       res.status(201).json({
 
         ok: true,
 
-        item:
-          result.item
+        item: result.item
+
       });
 
 
@@ -318,8 +320,133 @@ app.post(
         error:
           error.message ||
           'No se pudo guardar el artículo.'
+
       });
+
     }
+
+  }
+);
+
+
+/* =========================================================
+   POST /api/items/update
+   ACTUALIZAR ARTÍCULO
+========================================================= */
+
+app.post(
+  '/api/items/update',
+  upload.single('image'),
+  async (req, res) => {
+
+    try {
+
+      const {
+        id,
+        name,
+        category,
+        color,
+        description
+      } = req.body;
+
+
+      if (!id) {
+
+        return res.status(400).json({
+
+          ok: false,
+
+          error:
+            'Falta el ID del artículo.'
+
+        });
+
+      }
+
+
+      if (!name || !category || !color) {
+
+        return res.status(400).json({
+
+          ok: false,
+
+          error:
+            'Nombre, categoría y color son obligatorios.'
+
+        });
+
+      }
+
+
+      const data = {
+
+        action: 'update',
+
+        id: id.trim(),
+
+        name: name.trim(),
+
+        category: category.trim(),
+
+        color: color.trim(),
+
+        description:
+          (description || '').trim()
+
+      };
+
+
+      /*
+        La imagen es opcional al editar.
+
+        Si el usuario seleccionó una nueva imagen,
+        la enviamos también a Google Apps Script.
+      */
+
+      if (req.file) {
+
+        data.imageBase64 =
+          req.file.buffer.toString('base64');
+
+        data.imageMimeType =
+          req.file.mimetype;
+
+      }
+
+
+      const result =
+        await callGoogleApi(data);
+
+
+      res.json({
+
+        ok: true,
+
+        item: result.item
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        'Error actualizando artículo:',
+        error
+      );
+
+
+      res.status(500).json({
+
+        ok: false,
+
+        error:
+          error.message ||
+          'No se pudo actualizar el artículo.'
+
+      });
+
+    }
+
   }
 );
 
@@ -327,11 +454,10 @@ app.post(
 /* =========================================================
    DELETE /api/items/:id
    ELIMINAR ARTÍCULO
-   ========================================================= */
+========================================================= */
 
 app.delete(
   '/api/items/:id',
-
   async (req, res) => {
 
     try {
@@ -348,7 +474,9 @@ app.delete(
 
           error:
             'Falta el ID del artículo.'
+
         });
+
       }
 
 
@@ -358,6 +486,7 @@ app.delete(
           action: 'delete',
 
           id: id
+
         });
 
 
@@ -368,6 +497,7 @@ app.delete(
         message:
           result.message ||
           'Artículo eliminado.'
+
       });
 
 
@@ -386,19 +516,21 @@ app.delete(
         error:
           error.message ||
           'No se pudo eliminar el artículo.'
+
       });
+
     }
+
   }
 );
 
 
 /* =========================================================
-   RUTA DE PRUEBA
-   ========================================================= */
+   PRUEBA GOOGLE APPS SCRIPT
+========================================================= */
 
 app.get(
   '/api/test-google',
-
   async (_req, res) => {
 
     try {
@@ -421,8 +553,8 @@ app.get(
 
         ok: true,
 
-        google:
-          result
+        google: result
+
       });
 
 
@@ -440,15 +572,45 @@ app.get(
 
         error:
           error.message
+
       });
+
     }
+
   }
 );
 
 
 /* =========================================================
-   SERVIR LA APLICACIÓN
-   ========================================================= */
+   MANEJO DE ERRORES
+========================================================= */
+
+app.use(
+  (error, _req, res, _next) => {
+
+    console.error(
+      'Error del servidor:',
+      error
+    );
+
+
+    res.status(400).json({
+
+      ok: false,
+
+      error:
+        error.message ||
+        'Error procesando la solicitud.'
+
+    });
+
+  }
+);
+
+
+/* =========================================================
+   RUTA FINAL
+========================================================= */
 
 app.use(
   (_req, res) => {
@@ -460,13 +622,14 @@ app.use(
         'index.html'
       )
     );
+
   }
 );
 
 
 /* =========================================================
    INICIAR SERVIDOR
-   ========================================================= */
+========================================================= */
 
 app.listen(
   PORT,
@@ -476,10 +639,16 @@ app.listen(
       `MI CLOSET DIGITAL: http://localhost:${PORT}`
     );
 
+
     console.log(
+
       GOOGLE_APPS_SCRIPT_URL
+
         ? 'Google Apps Script: CONFIGURADO'
+
         : 'Google Apps Script: NO CONFIGURADO'
+
     );
+
   }
 );
