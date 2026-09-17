@@ -5,6 +5,11 @@ const state = {
   search: ''
 };
 
+
+/* =========================================================
+   CATEGORÍAS
+   ========================================================= */
+
 const categories = [
   'Todas',
   'Busos',
@@ -20,46 +25,153 @@ const categories = [
   'Otros'
 ];
 
-const $ = (s) => document.querySelector(s);
 
-const esc = (v = '') =>
-  String(v).replace(/[&<>'"]/g, c => ({
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+
+const $ = (selector) =>
+  document.querySelector(selector);
+
+
+const esc = (value = '') =>
+  String(value).replace(/[&<>'"]/g, char => ({
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     "'": '&#39;',
     '"': '&quot;'
-  }[c]));
+  }[char]));
+
+
+/* =========================================================
+   IMÁGENES
+   ========================================================= */
+
+/*
+ * Google Drive guarda la URL así:
+ *
+ * https://drive.google.com/uc?export=view&id=XXXXXXXX
+ *
+ * Para mostrarla dentro de la aplicación utilizaremos
+ * el endpoint thumbnail de Google Drive.
+ */
+
+function getImageUrl(item) {
+
+  const originalUrl =
+    item?.imageUrl ||
+    item?.image ||
+    '';
+
+
+  if (!originalUrl) {
+    return '';
+  }
+
+
+  const match =
+    String(originalUrl).match(
+      /[?&]id=([^&]+)/i
+    );
+
+
+  if (match && match[1]) {
+
+    return (
+      'https://drive.google.com/thumbnail?id=' +
+      encodeURIComponent(match[1]) +
+      '&sz=w1000'
+    );
+  }
+
+
+  return originalUrl;
+}
 
 
 /* =========================================================
    CARGAR ARTÍCULOS
-========================================================= */
+   ========================================================= */
 
 async function loadItems() {
+
   try {
-    const r = await fetch('/api/items');
-    state.items = await r.json();
+
+    const response =
+      await fetch('/api/items');
+
+
+    const data =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        'No se pudieron cargar los artículos.'
+      );
+    }
+
+
+    /*
+     * El servidor devuelve:
+     *
+     * {
+     *   ok: true,
+     *   items: [...]
+     * }
+     */
+
+    state.items =
+      Array.isArray(data.items)
+        ? data.items
+        : [];
+
+
     render();
+
+
   } catch (error) {
-    console.error(error);
-    toast('No se pudieron cargar los artículos.');
+
+    console.error(
+      'Error cargando artículos:',
+      error
+    );
+
+
+    state.items = [];
+
+
+    render();
+
+
+    toast(
+      error.message ||
+      'No se pudieron cargar los artículos.'
+    );
   }
 }
 
 
 /* =========================================================
    CAMBIAR DE VISTA
-========================================================= */
+   ========================================================= */
 
 function setView(view, filter) {
+
   state.view = view;
 
+
   if (filter) {
+
     state.filter = filter;
   }
 
+
   render();
+
 
   window.scrollTo({
     top: 0,
@@ -70,55 +182,82 @@ function setView(view, filter) {
 
 /* =========================================================
    NAVEGACIÓN
-========================================================= */
+   ========================================================= */
 
-document.addEventListener('click', e => {
+document.addEventListener(
+  'click',
+  event => {
 
-  const button = e.target.closest('[data-view]');
+    const button =
+      event.target.closest('[data-view]');
 
-  if (!button) return;
 
-  setView(
-    button.dataset.view,
-    button.dataset.filter
-  );
-});
+    if (!button) {
+      return;
+    }
+
+
+    setView(
+      button.dataset.view,
+      button.dataset.filter
+    );
+  }
+);
 
 
 /* =========================================================
-   ELIMINAR ARTÍCULO
-========================================================= */
+   ELIMINAR
+   ========================================================= */
 
-document.addEventListener('click', e => {
+document.addEventListener(
+  'click',
+  event => {
 
-  const button = e.target.closest('[data-delete]');
+    const button =
+      event.target.closest('[data-delete]');
 
-  if (!button) return;
 
-  const id = button.dataset.delete;
+    if (!button) {
+      return;
+    }
 
-  deleteItem(id);
-});
+
+    const id =
+      button.dataset.delete;
+
+
+    deleteItem(id);
+  }
+);
 
 
 /* =========================================================
    RENDER PRINCIPAL
-========================================================= */
+   ========================================================= */
 
 function render() {
 
-  ['home', 'ropa', 'add', 'looks', 'config'].forEach(id => {
+  [
+    'home',
+    'ropa',
+    'add',
+    'looks',
+    'config'
+  ].forEach(id => {
 
-    const section = $('#' + id);
+    const section =
+      $('#' + id);
+
 
     if (section) {
+
       section.classList.toggle(
         'hidden',
         state.view !== id
       );
     }
-
   });
+
 
   document
     .querySelectorAll('nav button')
@@ -126,13 +265,14 @@ function render() {
 
       button.classList.toggle(
         'active',
+
         button.dataset.view === state.view &&
+
         (
           !button.dataset.filter ||
           button.dataset.filter === state.filter
         )
       );
-
     });
 
 
@@ -140,17 +280,21 @@ function render() {
     renderHome();
   }
 
+
   if (state.view === 'ropa') {
     renderRopa();
   }
+
 
   if (state.view === 'add') {
     renderAdd();
   }
 
+
   if (state.view === 'looks') {
     renderLooks();
   }
+
 
   if (state.view === 'config') {
     renderConfig();
@@ -160,27 +304,42 @@ function render() {
 
 /* =========================================================
    INICIO
-========================================================= */
+   ========================================================= */
 
 function renderHome() {
 
   const counts = {
 
-    prendas: state.items.filter(
-      i => !['Zapatos', 'Bolsos', 'Accesorios'].includes(i.category)
-    ).length,
+    prendas:
+      state.items.filter(
+        item =>
+          ![
+            'Zapatos',
+            'Bolsos',
+            'Accesorios'
+          ].includes(item.category)
+      ).length,
 
-    zapatos: state.items.filter(
-      i => i.category === 'Zapatos'
-    ).length,
 
-    bolsos: state.items.filter(
-      i => i.category === 'Bolsos'
-    ).length,
+    zapatos:
+      state.items.filter(
+        item =>
+          item.category === 'Zapatos'
+      ).length,
 
-    accesorios: state.items.filter(
-      i => i.category === 'Accesorios'
-    ).length
+
+    bolsos:
+      state.items.filter(
+        item =>
+          item.category === 'Bolsos'
+      ).length,
+
+
+    accesorios:
+      state.items.filter(
+        item =>
+          item.category === 'Accesorios'
+      ).length
   };
 
 
@@ -192,6 +351,7 @@ function renderHome() {
       Tu armario, organizado y listo para crear nuevos looks.
     </p>
 
+
     <div class="grid">
 
       <div class="stat">
@@ -199,15 +359,18 @@ function renderHome() {
         <strong>${counts.prendas}</strong>
       </div>
 
+
       <div class="stat">
         <div class="label">ZAPATOS</div>
         <strong>${counts.zapatos}</strong>
       </div>
 
+
       <div class="stat">
         <div class="label">BOLSOS</div>
         <strong>${counts.bolsos}</strong>
       </div>
+
 
       <div class="stat">
         <div class="label">ACCESORIOS</div>
@@ -222,7 +385,9 @@ function renderHome() {
       <button
         class="btn"
         data-view="add">
+
         + AGREGAR ARTÍCULO
+
       </button>
 
     </div>
@@ -245,26 +410,34 @@ function renderHome() {
 
 /* =========================================================
    MI ROPA
-========================================================= */
+   ========================================================= */
 
 function renderRopa() {
 
-  const filtered = state.items.filter(item => {
+  const filtered =
+    state.items.filter(item => {
 
-    const categoryOk =
-      state.filter === 'Todas' ||
-      item.category === state.filter;
+      const categoryOk =
+        state.filter === 'Todas' ||
+        item.category === state.filter;
 
-    const q =
-      state.search.toLowerCase().trim();
 
-    const text =
-      `${item.name} ${item.category} ${item.color} ${item.description}`
-        .toLowerCase();
+      const q =
+        state.search
+          .toLowerCase()
+          .trim();
 
-    return categoryOk &&
-      (!q || text.includes(q));
-  });
+
+      const text =
+        `${item.name || ''} ${item.category || ''} ${item.color || ''} ${item.description || ''}`
+          .toLowerCase();
+
+
+      return (
+        categoryOk &&
+        (!q || text.includes(q))
+      );
+    });
 
 
   $('#ropa').innerHTML = `
@@ -285,10 +458,13 @@ function renderRopa() {
         value="${esc(state.search)}"
       >
 
+
       <button
         class="btn"
         data-view="add">
+
         + AGREGAR
+
       </button>
 
     </div>
@@ -299,9 +475,15 @@ function renderRopa() {
       ${categories.map(category => `
 
         <button
-          class="filter ${state.filter === category ? 'active' : ''}"
+          class="filter ${
+            state.filter === category
+              ? 'active'
+              : ''
+          }"
           data-cat="${esc(category)}">
+
           ${esc(category)}
+
         </button>
 
       `).join('')}
@@ -314,18 +496,23 @@ function renderRopa() {
   `;
 
 
-  const search = $('#search');
+  const search =
+    $('#search');
+
 
   if (search) {
 
-    search.addEventListener('input', e => {
+    search.addEventListener(
+      'input',
+      event => {
 
-      state.search = e.target.value;
+        state.search =
+          event.target.value;
 
-      renderRopa();
 
-    });
-
+        renderRopa();
+      }
+    );
   }
 
 
@@ -333,33 +520,34 @@ function renderRopa() {
     .querySelectorAll('[data-cat]')
     .forEach(button => {
 
-      button.addEventListener('click', () => {
+      button.addEventListener(
+        'click',
+        () => {
 
-        state.filter =
-          button.dataset.cat;
+          state.filter =
+            button.dataset.cat;
 
-        renderRopa();
 
-      });
-
+          renderRopa();
+        }
+      );
     });
 }
 
 
 /* =========================================================
-   TARJETAS DE ARTÍCULOS
-========================================================= */
+   TARJETAS
+   ========================================================= */
 
 function renderItemGrid(items) {
 
-  if (!items.length) {
+  if (!Array.isArray(items) || !items.length) {
 
     return `
       <div class="empty">
         Aún no tienes artículos guardados.
       </div>
     `;
-
   }
 
 
@@ -367,38 +555,66 @@ function renderItemGrid(items) {
 
     <div class="items-grid">
 
-      ${items.map(item => `
+      ${items.map(item => {
 
-        <article class="item-card">
+        const imageUrl =
+          getImageUrl(item);
 
-          <img
-            src="${esc(item.image)}"
-            alt="${esc(item.name)}"
-          >
 
-          <div class="item-info">
+        return `
 
-            <div class="item-name">
-              ${esc(item.name)}
+          <article class="item-card">
+
+            ${
+              imageUrl
+                ? `
+                  <img
+                    src="${esc(imageUrl)}"
+                    alt="${esc(item.name || 'Artículo')}"
+                    loading="lazy"
+                  >
+                `
+                : `
+                  <div class="item-image-empty">
+                    Sin imagen
+                  </div>
+                `
+            }
+
+
+            <div class="item-info">
+
+              <div class="item-name">
+                ${esc(item.name || '')}
+              </div>
+
+
+              <div class="item-meta">
+
+                ${esc(item.category || '')}
+
+                ·
+
+                ${esc(item.color || '')}
+
+              </div>
+
+
+              <button
+                class="btn-delete"
+                data-delete="${esc(item.id)}">
+
+                ELIMINAR
+
+              </button>
+
             </div>
 
-            <div class="item-meta">
-              ${esc(item.category)}
-              ·
-              ${esc(item.color)}
-            </div>
+          </article>
 
-            <button
-              class="btn-delete"
-              data-delete="${esc(item.id)}">
-              ELIMINAR
-            </button>
+        `;
 
-          </div>
-
-        </article>
-
-      `).join('')}
+      }).join('')}
 
     </div>
 
@@ -408,25 +624,31 @@ function renderItemGrid(items) {
 
 /* =========================================================
    ELIMINAR ARTÍCULO
-========================================================= */
+   ========================================================= */
 
 async function deleteItem(id) {
 
-  const item = state.items.find(
-    item => item.id === id
-  );
+  const item =
+    state.items.find(
+      currentItem =>
+        String(currentItem.id) === String(id)
+    );
+
 
   if (!item) {
 
-    toast('No se encontró el artículo.');
+    toast(
+      'No se encontró el artículo.'
+    );
 
     return;
   }
 
 
-  const confirmed = confirm(
-    `¿Quieres eliminar "${item.name}"?`
-  );
+  const confirmed =
+    confirm(
+      `¿Quieres eliminar "${item.name}"?`
+    );
 
 
   if (!confirmed) {
@@ -436,15 +658,17 @@ async function deleteItem(id) {
 
   try {
 
-    const response = await fetch(
-      `/api/items/${id}`,
-      {
-        method: 'DELETE'
-      }
-    );
+    const response =
+      await fetch(
+        `/api/items/${encodeURIComponent(id)}`,
+        {
+          method: 'DELETE'
+        }
+      );
 
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
 
     if (!response.ok) {
@@ -453,37 +677,43 @@ async function deleteItem(id) {
         data.error ||
         'No se pudo eliminar el artículo.'
       );
-
     }
 
 
     state.items =
       state.items.filter(
-        item => item.id !== id
+        currentItem =>
+          String(currentItem.id) !== String(id)
       );
 
 
-    toast('Artículo eliminado.');
+    toast(
+      'Artículo eliminado.'
+    );
 
 
     render();
 
+
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      'Error eliminando artículo:',
+      error
+    );
+
 
     toast(
       error.message ||
       'No se pudo eliminar el artículo.'
     );
-
   }
 }
 
 
 /* =========================================================
    AGREGAR ARTÍCULO
-========================================================= */
+   ========================================================= */
 
 function renderAdd() {
 
@@ -566,9 +796,17 @@ function renderAdd() {
             <select id="category">
 
               ${categories
-                .filter(c => c !== 'Todas')
-                .map(c =>
-                  `<option value="${esc(c)}">${esc(c)}</option>`
+                .filter(
+                  category =>
+                    category !== 'Todas'
+                )
+                .map(
+                  category =>
+                    `
+                    <option value="${esc(category)}">
+                      ${esc(category)}
+                    </option>
+                    `
                 )
                 .join('')}
 
@@ -609,7 +847,9 @@ function renderAdd() {
           <button
             class="btn secondary"
             data-view="home">
+
             CANCELAR
+
           </button>
 
 
@@ -617,7 +857,9 @@ function renderAdd() {
             id="save"
             class="btn"
             disabled>
+
             GUARDAR ARTÍCULO
+
           </button>
 
         </div>
@@ -634,9 +876,12 @@ function renderAdd() {
   `;
 
 
-  const dropzone = $('#dropzone');
+  const dropzone =
+    $('#dropzone');
 
-  const fileInput = $('#file');
+
+  const fileInput =
+    $('#file');
 
 
   dropzone.addEventListener(
@@ -657,9 +902,7 @@ function renderAdd() {
         analyze(
           fileInput.files[0]
         );
-
       }
-
     }
   );
 
@@ -673,15 +916,17 @@ function renderAdd() {
 
 /* =========================================================
    CARGAR FOTO
-========================================================= */
+   ========================================================= */
 
 function analyze(image) {
 
-  const preview = $('#preview');
+  const preview =
+    $('#preview');
 
 
   preview.src =
     URL.createObjectURL(image);
+
 
   preview.style.display =
     'block';
@@ -691,26 +936,34 @@ function analyze(image) {
     'none';
 
 
-  $('#name').value = '';
+  $('#name').value =
+    '';
 
-  $('#category').value = 'Busos';
 
-  $('#color').value = '';
+  $('#category').value =
+    'Busos';
 
-  $('#description').value = '';
+
+  $('#color').value =
+    '';
+
+
+  $('#description').value =
+    '';
 
 
   $('#status').textContent =
     'Foto cargada. Completa los datos del artículo y guárdalo.';
 
 
-  $('#save').disabled = false;
+  $('#save').disabled =
+    false;
 }
 
 
 /* =========================================================
    GUARDAR ARTÍCULO
-========================================================= */
+   ========================================================= */
 
 async function saveItem() {
 
@@ -731,11 +984,14 @@ async function saveItem() {
   const name =
     $('#name').value.trim();
 
+
   const category =
     $('#category').value;
 
+
   const color =
     $('#color').value.trim();
+
 
   const description =
     $('#description').value.trim();
@@ -780,20 +1036,24 @@ async function saveItem() {
     file
   );
 
+
   formData.append(
     'name',
     name
   );
+
 
   formData.append(
     'category',
     category
   );
 
+
   formData.append(
     'color',
     color
   );
+
 
   formData.append(
     'description',
@@ -808,8 +1068,13 @@ async function saveItem() {
   saveButton.disabled =
     true;
 
+
   saveButton.textContent =
     'GUARDANDO...';
+
+
+  $('#status').textContent =
+    'Guardando en Google Drive y Google Sheets...';
 
 
   try {
@@ -834,35 +1099,69 @@ async function saveItem() {
         data.error ||
         'No se pudo guardar.'
       );
-
     }
 
 
-    state.items.unshift(data);
+    /*
+     * El servidor devuelve:
+     *
+     * {
+     *   ok: true,
+     *   item: {...}
+     * }
+     */
+
+    if (
+      !data.item ||
+      !data.item.id
+    ) {
+
+      throw new Error(
+        'El servidor no devolvió correctamente el artículo guardado.'
+      );
+    }
+
+
+    /*
+     * Agregar únicamente el artículo,
+     * no toda la respuesta del servidor.
+     */
+
+    state.items.unshift(
+      data.item
+    );
 
 
     state.filter =
       'Todas';
+
 
     state.search =
       '';
 
 
     toast(
-      'Artículo guardado.'
+      'Artículo guardado correctamente.'
     );
 
 
-    setTimeout(() => {
+    setTimeout(
+      () => {
 
-      setView('ropa');
+        setView('ropa');
 
-    }, 500);
+      },
+      500
+    );
 
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      'Error guardando artículo:',
+      error
+    );
+
 
     toast(
       error.message ||
@@ -873,16 +1172,20 @@ async function saveItem() {
     saveButton.disabled =
       false;
 
+
     saveButton.textContent =
       'GUARDAR ARTÍCULO';
 
+
+    $('#status').textContent =
+      '';
   }
 }
 
 
 /* =========================================================
    MIS LOOKS
-========================================================= */
+   ========================================================= */
 
 function renderLooks() {
 
@@ -894,12 +1197,15 @@ function renderLooks() {
       Aquí construiremos el creador de looks con tus artículos.
     </p>
 
+
     <div class="panel look-placeholder">
 
       <button
         class="btn"
         data-view="ropa">
+
         VER MI ROPA
+
       </button>
 
     </div>
@@ -910,7 +1216,7 @@ function renderLooks() {
 
 /* =========================================================
    CONFIGURACIÓN
-========================================================= */
+   ========================================================= */
 
 function renderConfig() {
 
@@ -922,12 +1228,13 @@ function renderConfig() {
       Configuración básica de MI CLOSET DIGITAL.
     </p>
 
+
     <div class="panel">
 
-      <b>Versión inicial</b>
+      <b>Almacenamiento</b>
 
       <p class="small-note">
-        Los artículos se guardan localmente en esta aplicación.
+        Tus artículos se almacenan en Google Sheets y las fotografías en Google Drive.
       </p>
 
     </div>
@@ -938,25 +1245,31 @@ function renderConfig() {
 
 /* =========================================================
    MENSAJE
-========================================================= */
+   ========================================================= */
 
-function toast(msg) {
+function toast(message) {
 
-  const t =
+  const element =
     $('#toast');
 
 
-  t.textContent =
-    msg;
+  element.textContent =
+    message;
 
 
-  t.classList.add(
+  element.classList.add(
     'show'
   );
 
 
   setTimeout(
-    () => t.classList.remove('show'),
+    () => {
+
+      element.classList.remove(
+        'show'
+      );
+
+    },
     2200
   );
 }
@@ -964,18 +1277,45 @@ function toast(msg) {
 
 /* =========================================================
    INICIAR APLICACIÓN
-========================================================= */
+   ========================================================= */
 
 loadItems();
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(() => {
-        console.log('Service Worker registrado correctamente.');
-      })
-      .catch(error => {
-        console.error('Error al registrar Service Worker:', error);
-      });
-  });
+
+/* =========================================================
+   SERVICE WORKER
+   ========================================================= */
+
+if (
+  'serviceWorker' in navigator
+) {
+
+  window.addEventListener(
+    'load',
+    () => {
+
+      navigator.serviceWorker
+        .register(
+          '/service-worker.js'
+        )
+
+        .then(() => {
+
+          console.log(
+            'Service Worker registrado correctamente.'
+          );
+
+        })
+
+        .catch(error => {
+
+          console.error(
+            'Error al registrar Service Worker:',
+            error
+          );
+
+        });
+
+    }
+  );
 }
