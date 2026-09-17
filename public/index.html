@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>MI CLOSET · Digital Wardrobe</title>
+
+  <link
+    rel="stylesheet"
+    href="/styles.css"
+  >
+
+  <!-- Configuración de aplicación móvil -->
+  <link
+    rel="manifest"
+    href="/manifest.json"
+  >
+
+  <meta
+    name="theme-color"
+    content="#111111"
+  >
+
+  <meta
+    name="mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black"
+  >
+
+  <meta
+    name="apple-mobile-web-app-title"
+    content="Mi Closet"
+  >
+
+</head>
+
+
+<body>
+
+  <!-- =====================================================
+       MENÚ LATERAL
+  ====================================================== -->
+
+  <aside class="sidebar">
+
+    <div class="brand">
+      MI CLOSET
+      <span>DIGITAL WARDROBE</span>
+    </div>
+
+
+    <div class="menu-title">
+      MENÚ PRINCIPAL
+    </div>
+
+
+    <nav>
+
+      <button
+        data-view="home"
+      >
+        Inicio
+      </button>
+
+
+      <button
+        data-view="ropa"
+      >
+        Mi ropa
+      </button>
+
+
+      <button
+        data-view="ropa"
+        data-filter="Zapatos"
+      >
+        Zapatos
+      </button>
+
+
+      <button
+        data-view="ropa"
+        data-filter="Bolsos"
+      >
+        Bolsos
+      </button>
+
+
+      <button
+        data-view="ropa"
+        data-filter="Accesorios"
+      >
+        Accesorios
+      </button>
+
+
+      <button
+        data-view="looks"
+      >
+        Mis looks
+      </button>
+
+    </nav>
+
+
+    <div class="menu-title">
+      GESTIÓN
+    </div>
+
+
+    <nav>
+
+      <button
+        data-view="add"
+      >
+        + Agregar artículo
+      </button>
+
+
+      <button
+        data-view="config"
+      >
+        Configuración
+      </button>
+
+    </nav>
+
+  </aside>
+
+
+  <!-- =====================================================
+       CONTENIDO PRINCIPAL
+  ====================================================== -->
+
+  <main class="main">
+
+    <section
+      id="home"
+      class="view"
+    ></section>
+
+
+    <section
+      id="ropa"
+      class="view hidden"
+    ></section>
+
+
+    <section
+      id="add"
+      class="view hidden"
+    ></section>
+
+
+    <section
+      id="looks"
+      class="view hidden"
+    ></section>
+
+
+    <section
+      id="config"
+      class="view hidden"
+    ></section>
+
+  </main>
+
+
+  <!-- =====================================================
+       MENSAJES
+  ====================================================== -->
+
+  <div
+    id="toast"
+    class="toast"
+  ></div>
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+  ====================================================== -->
+
+  <script src="/app.js"></script>
+
+</body>
+
+</html>
