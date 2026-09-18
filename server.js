@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import dotenv from 'dotenv';
+import OpenAI from 'openai';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,16 +17,33 @@ const PORT = process.env.PORT || 3000;
 const GOOGLE_APPS_SCRIPT_URL =
   process.env.GOOGLE_APPS_SCRIPT_URL;
 
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+const OPENAI_MODEL =
+  process.env.OPENAI_MODEL || 'gpt-5.6-luna';
+
 
 /* =========================================================
    CARPETAS
 ========================================================= */
 
-const DATA_DIR = path.join(__dirname, 'data');
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const DATA_DIR =
+  path.join(__dirname, 'data');
 
-await fs.mkdir(DATA_DIR, { recursive: true });
-await fs.mkdir(UPLOADS_DIR, { recursive: true });
+const UPLOADS_DIR =
+  path.join(__dirname, 'uploads');
+
+await fs.mkdir(
+  DATA_DIR,
+  { recursive: true }
+);
+
+await fs.mkdir(
+  UPLOADS_DIR,
+  { recursive: true }
+);
 
 
 /* =========================================================
@@ -42,14 +60,28 @@ const upload = multer({
 
   fileFilter: (_req, file, cb) => {
 
-    if (file.mimetype && file.mimetype.startsWith('image/')) {
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp'
+    ];
+
+    if (
+      allowedTypes.includes(
+        file.mimetype
+      )
+    ) {
+
       cb(null, true);
+
     } else {
+
       cb(
         new Error(
-          'El archivo seleccionado no es una imagen válida.'
+          'La imagen debe ser JPG, PNG o WEBP.'
         )
       );
+
     }
 
   }
@@ -69,7 +101,10 @@ app.use(
 
 app.use(
   express.static(
-    path.join(__dirname, 'public')
+    path.join(
+      __dirname,
+      'public'
+    )
   )
 );
 
@@ -80,7 +115,9 @@ app.use(
 
 function validateGoogleApi() {
 
-  if (!GOOGLE_APPS_SCRIPT_URL) {
+  if (
+    !GOOGLE_APPS_SCRIPT_URL
+  ) {
 
     throw new Error(
       'No está configurada la variable GOOGLE_APPS_SCRIPT_URL en Render.'
@@ -99,29 +136,35 @@ async function callGoogleApi(data) {
 
   validateGoogleApi();
 
-  const response = await fetch(
-    GOOGLE_APPS_SCRIPT_URL,
-    {
-      method: 'POST',
+  const response =
+    await fetch(
+      GOOGLE_APPS_SCRIPT_URL,
+      {
+        method: 'POST',
 
-      headers: {
-        'Content-Type': 'application/json'
-      },
+        headers: {
+          'Content-Type':
+            'application/json'
+        },
 
-      body: JSON.stringify(data)
+        body:
+          JSON.stringify(data)
 
-    }
-  );
+      }
+    );
 
 
-  const text = await response.text();
+  const text =
+    await response.text();
+
 
   let result;
 
 
   try {
 
-    result = JSON.parse(text);
+    result =
+      JSON.parse(text);
 
   } catch {
 
@@ -142,7 +185,9 @@ async function callGoogleApi(data) {
   }
 
 
-  if (result.ok === false) {
+  if (
+    result.ok === false
+  ) {
 
     throw new Error(
       result.error ||
@@ -178,7 +223,8 @@ app.get(
 
         ok: true,
 
-        items: result.items || []
+        items:
+          result.items || []
 
       });
 
@@ -207,6 +253,302 @@ app.get(
 
 
 /* =========================================================
+   POST /api/analyze
+   ANALIZAR ARTÍCULO CON IA
+========================================================= */
+
+app.post(
+  '/api/analyze',
+  upload.single('image'),
+  async (req, res) => {
+
+    try {
+
+      if (!req.file) {
+
+        return res.status(400).json({
+
+          ok: false,
+
+          error:
+            'La foto es obligatoria.'
+
+        });
+
+      }
+
+
+      const allowedTypes = [
+
+        'image/jpeg',
+
+        'image/png',
+
+        'image/webp'
+
+      ];
+
+
+      if (
+        !allowedTypes.includes(
+          req.file.mimetype
+        )
+      ) {
+
+        return res.status(400).json({
+
+          ok: false,
+
+          error:
+            'La imagen debe ser JPG, PNG o WEBP.'
+
+        });
+
+      }
+
+
+      /*
+       * Convertir la imagen a Base64
+       */
+
+      const imageBase64 =
+        req.file.buffer.toString(
+          'base64'
+        );
+
+
+      /*
+       * Crear Data URL válida
+       */
+
+      const imageDataUrl =
+        `data:${req.file.mimetype};base64,${imageBase64}`;
+
+
+      /*
+       * Enviar imagen a OpenAI
+       */
+
+      const response =
+        await openai.responses.create({
+
+          model:
+            OPENAI_MODEL,
+
+          input: [
+
+            {
+
+              role: 'user',
+
+              content: [
+
+                {
+
+                  type:
+                    'input_text',
+
+                  text:
+`Analiza esta fotografía de una prenda, zapato, bolso o accesorio para un armario digital.
+
+Devuelve ÚNICAMENTE un JSON válido con estos campos:
+
+- name: nombre corto y específico del artículo.
+- category: EXACTAMENTE una de estas opciones: Busos, Camisas, Pantalones, Jeans, Vestidos, Faldas, Chaquetas, Zapatos, Bolsos, Accesorios, Otros.
+- color: color principal visible.
+- description: descripción breve y útil que indique tipo de prenda o artículo, color, estilo y características visibles.
+
+No inventes marcas, materiales, estampados ni características que no sean visibles.
+
+Si tienes dudas sobre la categoría, utiliza "Otros".`
+
+                },
+
+                {
+
+                  type:
+                    'input_image',
+
+                  image_url:
+                    imageDataUrl,
+
+                  detail:
+                    'high'
+
+                }
+
+              ]
+
+            }
+
+          ],
+
+
+          /*
+           * Respuesta estructurada
+           */
+
+          text: {
+
+            format: {
+
+              type:
+                'json_schema',
+
+              name:
+                'clothing_analysis',
+
+              strict:
+                true,
+
+              schema: {
+
+                type:
+                  'object',
+
+                properties: {
+
+                  name: {
+
+                    type:
+                      'string'
+
+                  },
+
+                  category: {
+
+                    type:
+                      'string',
+
+                    enum: [
+
+                      'Busos',
+
+                      'Camisas',
+
+                      'Pantalones',
+
+                      'Jeans',
+
+                      'Vestidos',
+
+                      'Faldas',
+
+                      'Chaquetas',
+
+                      'Zapatos',
+
+                      'Bolsos',
+
+                      'Accesorios',
+
+                      'Otros'
+
+                    ]
+
+                  },
+
+                  color: {
+
+                    type:
+                      'string'
+
+                  },
+
+                  description: {
+
+                    type:
+                      'string'
+
+                  }
+
+                },
+
+                required: [
+
+                  'name',
+
+                  'category',
+
+                  'color',
+
+                  'description'
+
+                ],
+
+                additionalProperties:
+                  false
+
+              }
+
+            }
+
+          }
+
+        });
+
+
+      /*
+       * Convertir respuesta a objeto
+       */
+
+      let analysis;
+
+
+      try {
+
+        analysis =
+          JSON.parse(
+            response.output_text
+          );
+
+      } catch {
+
+        throw new Error(
+          'La IA respondió en un formato que no se pudo interpretar.'
+        );
+
+      }
+
+
+      /*
+       * Responder al navegador
+       */
+
+      res.json({
+
+        ok: true,
+
+        analysis
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        'Error analizando artículo con IA:',
+        error
+      );
+
+
+      res.status(500).json({
+
+        ok: false,
+
+        error:
+          error.message ||
+          'No se pudo analizar la imagen.'
+
+      });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
    POST /api/items
    CREAR ARTÍCULO
 ========================================================= */
@@ -224,7 +566,8 @@ app.post(
 
           ok: false,
 
-          error: 'La foto es obligatoria.'
+          error:
+            'La foto es obligatoria.'
 
         });
 
@@ -258,29 +601,33 @@ app.post(
 
 
       const imageBase64 =
-        req.file.buffer.toString('base64');
+        req.file.buffer.toString(
+          'base64'
+        );
 
 
       const result =
         await callGoogleApi({
 
-          action: 'create',
+          action:
+            'create',
 
-          name: name.trim(),
+          name:
+            name.trim(),
 
-          category: category.trim(),
+          category:
+            category.trim(),
 
-          color: color.trim(),
+          color:
+            color.trim(),
 
           description:
             (description || '').trim(),
 
           imageBase64:
-
             imageBase64,
 
           imageMimeType:
-
             req.file.mimetype
 
         });
@@ -290,7 +637,8 @@ app.post(
 
         ok: true,
 
-        item: result.item
+        item:
+          result.item
 
       });
 
@@ -354,7 +702,11 @@ app.post(
       }
 
 
-      if (!name || !category || !color) {
+      if (
+        !name ||
+        !category ||
+        !color
+      ) {
 
         return res.status(400).json({
 
@@ -370,15 +722,20 @@ app.post(
 
       const data = {
 
-        action: 'update',
+        action:
+          'update',
 
-        id: id.trim(),
+        id:
+          id.trim(),
 
-        name: name.trim(),
+        name:
+          name.trim(),
 
-        category: category.trim(),
+        category:
+          category.trim(),
 
-        color: color.trim(),
+        color:
+          color.trim(),
 
         description:
           (description || '').trim()
@@ -388,15 +745,14 @@ app.post(
 
       /*
        * La imagen es opcional al editar.
-       *
-       * Si el usuario seleccionó una nueva imagen,
-       * la enviamos también a Google Apps Script.
        */
 
       if (req.file) {
 
         data.imageBase64 =
-          req.file.buffer.toString('base64');
+          req.file.buffer.toString(
+            'base64'
+          );
 
         data.imageMimeType =
           req.file.mimetype;
@@ -405,14 +761,17 @@ app.post(
 
 
       const result =
-        await callGoogleApi(data);
+        await callGoogleApi(
+          data
+        );
 
 
       res.json({
 
         ok: true,
 
-        item: result.item
+        item:
+          result.item
 
       });
 
@@ -473,9 +832,11 @@ app.delete(
       const result =
         await callGoogleApi({
 
-          action: 'delete',
+          action:
+            'delete',
 
-          id: id
+          id:
+            id
 
         });
 
@@ -528,7 +889,10 @@ app.get(
 
       const result =
         await callGoogleApi({
-          action: 'listLooks'
+
+          action:
+            'listLooks'
+
         });
 
 
@@ -536,9 +900,11 @@ app.get(
 
         ok: true,
 
-        looks: result.looks || []
+        looks:
+          result.looks || []
 
       });
+
 
     } catch (error) {
 
@@ -586,7 +952,10 @@ app.post(
       } = req.body;
 
 
-      if (!name || !name.trim()) {
+      if (
+        !name ||
+        !name.trim()
+      ) {
 
         return res.status(400).json({
 
@@ -603,7 +972,8 @@ app.post(
       const result =
         await callGoogleApi({
 
-          action: 'createLook',
+          action:
+            'createLook',
 
           name:
             name.trim(),
@@ -624,7 +994,9 @@ app.post(
             bag || '',
 
           accessories:
-            Array.isArray(accessories)
+            Array.isArray(
+              accessories
+            )
               ? accessories
               : []
 
@@ -635,7 +1007,8 @@ app.post(
 
         ok: true,
 
-        look: result.look
+        look:
+          result.look
 
       });
 
@@ -701,7 +1074,10 @@ app.post(
       }
 
 
-      if (!name || !name.trim()) {
+      if (
+        !name ||
+        !name.trim()
+      ) {
 
         return res.status(400).json({
 
@@ -718,7 +1094,8 @@ app.post(
       const result =
         await callGoogleApi({
 
-          action: 'updateLook',
+          action:
+            'updateLook',
 
           id:
             id.trim(),
@@ -742,7 +1119,9 @@ app.post(
             bag || '',
 
           accessories:
-            Array.isArray(accessories)
+            Array.isArray(
+              accessories
+            )
               ? accessories
               : []
 
@@ -753,7 +1132,8 @@ app.post(
 
         ok: true,
 
-        look: result.look
+        look:
+          result.look
 
       });
 
@@ -814,9 +1194,11 @@ app.delete(
       const result =
         await callGoogleApi({
 
-          action: 'deleteLook',
+          action:
+            'deleteLook',
 
-          id: id
+          id:
+            id
 
         });
 
@@ -871,8 +1253,10 @@ app.get(
 
       const response =
         await fetch(
+
           GOOGLE_APPS_SCRIPT_URL +
           '?action=ping'
+
         );
 
 
@@ -884,7 +1268,8 @@ app.get(
 
         ok: true,
 
-        google: result
+        google:
+          result
 
       });
 
@@ -917,7 +1302,12 @@ app.get(
 ========================================================= */
 
 app.use(
-  (error, _req, res, _next) => {
+  (
+    error,
+    _req,
+    res,
+    _next
+  ) => {
 
     console.error(
       'Error del servidor:',
@@ -947,11 +1337,17 @@ app.use(
   (_req, res) => {
 
     res.sendFile(
+
       path.join(
+
         __dirname,
+
         'public',
+
         'index.html'
+
       )
+
     );
 
   }

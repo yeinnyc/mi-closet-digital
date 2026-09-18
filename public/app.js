@@ -2475,47 +2475,123 @@ function renderAdd() {
 
   }
 
-function analyze(image) {
+async function analyze(image) {
 
-  if (!image) {
-    return;
-  }
+    if (!image) {
+        return;
+    }
 
-  if (!image.type.startsWith('image/')) {
-    toast('Selecciona una imagen válida.');
-    return;
-  }
+    if (!image.type.startsWith('image/')) {
+        toast('Selecciona una imagen válida.');
+        return;
+    }
 
-  if (image.size > 8 * 1024 * 1024) {
-    toast('La imagen no puede superar 8 MB.');
-    return;
-  }
+    if (image.size > 8 * 1024 * 1024) {
+        toast('La imagen no puede superar 8 MB.');
+        return;
+    }
 
-  addSelectedFile = image;
+    addSelectedFile = image;
 
-  const preview = $('#preview');
-  const dropContent = $('.drop-content');
+    const preview = document.getElementById('preview');
+    const dropContent = document.querySelector('.drop-content');
+    const saveButton = document.getElementById('save');
+    const status = document.getElementById('status');
 
-  if (preview) {
-    preview.src = URL.createObjectURL(image);
-    preview.style.display = 'block';
-  }
+    // Mostrar vista previa
+    if (preview) {
+        const imageUrl = URL.createObjectURL(image);
 
-  if (dropContent) {
-    dropContent.style.display = 'none';
-  }
+        preview.src = imageUrl;
+        preview.alt = 'Vista previa';
+        preview.style.display = 'block';
 
-  const saveButton = $('#save');
+        preview.onload = () => {
+            URL.revokeObjectURL(imageUrl);
+        };
+    }
 
-  if (saveButton) {
-    saveButton.disabled = false;
-  }
+    if (dropContent) {
+        dropContent.style.display = 'none';
+    }
 
-  const status = $('#status');
+    if (saveButton) {
+        saveButton.disabled = true;
+    }
 
-  if (status) {
-    status.textContent = 'Foto seleccionada correctamente.';
-  }
+    if (status) {
+        status.textContent = 'Analizando prenda con IA...';
+    }
+
+    try {
+
+        const formData = new FormData();
+        formData.append('image', image);
+
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+            throw new Error(
+                result.error || 'No se pudo analizar la imagen.'
+            );
+        }
+
+        const analysis = result.analysis;
+
+        // Completar automáticamente los campos
+        const nameInput = document.getElementById('name');
+        const categoryInput = document.getElementById('category');
+        const colorInput = document.getElementById('color');
+        const descriptionInput =
+            document.getElementById('description');
+
+        if (nameInput) {
+            nameInput.value = analysis.name || '';
+        }
+
+        if (categoryInput) {
+            categoryInput.value = analysis.category || '';
+        }
+
+        if (colorInput) {
+            colorInput.value = analysis.color || '';
+        }
+
+        if (descriptionInput) {
+            descriptionInput.value =
+                analysis.description || '';
+        }
+
+        if (status) {
+            status.textContent =
+                'Datos identificados por IA. Puedes corregirlos antes de guardar.';
+        }
+
+    } catch (error) {
+
+        console.error('Error analizando artículo:', error);
+
+        if (status) {
+            status.textContent =
+                'No se pudo analizar la imagen. Puedes completar los datos manualmente.';
+        }
+
+        toast(
+            error.message ||
+            'No se pudo analizar la imagen.'
+        );
+
+    } finally {
+
+        if (saveButton) {
+            saveButton.disabled = false;
+        }
+    }
 }
 
 function selectFile(file) {
@@ -2551,10 +2627,13 @@ function selectFile(file) {
         dropContent.style.display = 'none';
     }
 
-    // Permitir guardar
+        // Permitir guardar
     if (saveButton) {
         saveButton.disabled = false;
     }
+
+    // Analizar automáticamente con IA
+    analyze(file);
 }
 
   /* Zona de foto */
