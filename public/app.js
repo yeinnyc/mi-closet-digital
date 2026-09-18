@@ -883,6 +883,7 @@ function render() {
     'ropa',
     'add',
     'looks',
+    'asesoria',
     'config'
   ].forEach(id => {
 
@@ -933,6 +934,10 @@ function render() {
   if (state.view === 'looks') {
     renderLooks();
   }
+
+  if (state.view === 'asesoria') {
+  renderAsesoria();
+}
 
   if (state.view === 'config') {
     renderConfig();
@@ -4747,6 +4752,311 @@ function renderConfig() {
   `;
 }
 
+/* =========================================================
+   ASESORÍA DE IMAGEN
+   ========================================================= */
+
+function renderAsesoria() {
+
+  $('#asesoria').innerHTML = `
+
+    <h1>
+      ASESORÍA DE IMAGEN
+    </h1>
+
+    <p class="subtitle">
+      Tu asesora de imagen personalizada.
+    </p>
+
+    <div class="panel">
+
+      <div class="look-section-title">
+
+        <strong>
+          MI PERFIL
+        </strong>
+
+        <span>
+          Información que la IA utilizará
+          para personalizar tus recomendaciones.
+        </span>
+
+      </div>
+
+      <div class="grid">
+
+        <div class="stat">
+          <div class="label">ESTATURA</div>
+          <strong>151 cm</strong>
+        </div>
+
+        <div class="stat">
+          <div class="label">BUSTO</div>
+          <strong>95 cm</strong>
+        </div>
+
+        <div class="stat">
+          <div class="label">CINTURA</div>
+          <strong>80 cm</strong>
+        </div>
+
+        <div class="stat">
+          <div class="label">CADERA</div>
+          <strong>95 cm</strong>
+        </div>
+
+      </div>
+
+      <p>
+        <b>Preferencias de estilo:</b>
+        elegante, femenino y cómodo.
+      </p>
+
+      <p>
+        <b>Objetivos:</b>
+        verte más alta, alargar visualmente
+        las piernas, definir la cintura,
+        equilibrar los hombros y estilizar
+        la silueta.
+      </p>
+
+      <p>
+        <b>Preferencias de mangas:</b>
+        ¾ y largas.
+      </p>
+
+      <p>
+        <b>Colores favoritos:</b>
+        negro, vino tinto y beige.
+      </p>
+
+      <p>
+        <b>Colores a evitar:</b>
+        amarillo y fucsia.
+      </p>
+
+      <p>
+        <b>Estilo de asesoría:</b>
+        creativo, respetando tu figura y estilo.
+      </p>
+
+    </div>
+
+    <div class="panel">
+
+      <div class="look-section-title">
+
+        <strong>
+          ¿QUÉ QUIERES CONSULTAR?
+        </strong>
+
+      </div>
+
+    <div>
+
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+  <label
+    for="consulta-asesoria"
+    style="font-weight:700;"
+  >
+    ESCRIBE TU CONSULTA
+  </label>
+
+  <textarea
+    id="consulta-asesoria"
+    rows="6"
+    style="width:100%; box-sizing:border-box; resize:vertical;"
+    placeholder="Ejemplo: Necesito un look elegante para trabajar el miércoles, que me haga ver más alta y disimule mis brazos."
+  ></textarea>
+
+  <button
+    id="btn-asesorar"
+    class="btn"
+    type="button"
+    style="align-self:flex-start;"
+  >
+    ASESORARME
+  </button>
+
+</div>
+
+<div
+  id="respuesta-asesoria"
+  style="margin-top:24px;"
+></div>
+
+</div>
+
+    </div>
+
+  `;
+
+  $('#btn-asesorar').addEventListener(
+    'click',
+    async () => {
+
+      const consulta =
+        $('#consulta-asesoria').value.trim();
+
+      const respuesta =
+        $('#respuesta-asesoria');
+
+      if (!consulta) {
+
+        respuesta.innerHTML =
+          '<p>Escribe primero tu consulta.</p>';
+
+        return;
+      }
+
+      respuesta.innerHTML =
+  '<p>Analizando tu consulta...</p>';
+
+try {
+
+  const response =
+    await fetch('/api/asesoria', {
+
+      method: 'POST',
+
+      headers: {
+        'Content-Type':
+          'application/json'
+      },
+
+      body:
+        JSON.stringify({
+          consulta
+        })
+
+    });
+
+
+  const data =
+    await response.json();
+
+
+  if (!response.ok || !data.ok) {
+
+    throw new Error(
+      data.error ||
+      'No fue posible obtener la asesoría.'
+    );
+
+  }
+
+
+  const respuestaFormateada =
+  data.answer
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/^### (.+)$/gm, '<strong>$1</strong>')
+    .replace(/^## (.+)$/gm, '<strong>$1</strong>')
+    .replace(/^\- (.+)$/gm, '• $1')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+
+respuesta.innerHTML = `
+  <div style="
+    position:relative;
+    line-height:1.7;
+    font-size:15px;
+    padding-top:45px;
+    user-select:text;
+    -webkit-user-select:text;
+  ">
+
+    <button
+      id="btn-copiar-asesoria"
+      type="button"
+      title="Copiar respuesta"
+      style="
+        position:absolute;
+        top:0;
+        right:0;
+        width:38px;
+        height:38px;
+        border:0;
+        border-radius:10px;
+        background:#222;
+        color:white;
+        cursor:pointer;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      "
+    >
+      📋
+    </button>
+
+    ${respuestaFormateada}
+
+  </div>
+`;
+
+document
+  .getElementById('btn-copiar-asesoria')
+  .addEventListener('click', async () => {
+
+    await navigator.clipboard.writeText(
+      data.answer
+    );
+
+    const boton =
+      document.getElementById(
+        'btn-copiar-asesoria'
+      );
+
+    boton.innerHTML = '✓';
+
+    setTimeout(() => {
+
+      boton.innerHTML = `
+        <svg
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      `;
+
+    }, 1500);
+
+  });
+
+} catch (error) {
+
+  console.error(
+    'Error en asesoría:',
+    error
+  );
+
+  respuesta.innerHTML = `
+
+    <p>
+      No fue posible generar la asesoría.
+    </p>
+
+    <p>
+      ${error.message}
+    </p>
+
+  `;
+  }
+
+  }
+
+);
+}
 
 /* =========================================================
    INICIO DE LA APLICACIÓN

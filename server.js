@@ -201,6 +201,222 @@ async function callGoogleApi(data) {
 
 }
 
+/* =========================================================
+   POST /api/asesoria
+   ASESORÍA DE IMAGEN PERSONALIZADA
+========================================================= */
+
+app.post(
+  '/api/asesoria',
+  async (req, res) => {
+    
+  console.log('>>> ENTRO A /api/asesoria');
+
+    try {
+
+      const consulta =
+        String(req.body?.consulta || '').trim();
+
+      if (!consulta) {
+
+        return res.status(400).json({
+
+          ok: false,
+
+          error:
+            'La consulta es obligatoria.'
+
+        });
+
+      }
+
+
+      const closetResult =
+        await callGoogleApi({
+          action: 'list'
+        });
+
+
+      const closet =
+        closetResult.items || [];
+
+
+      const perfil = {
+
+        altura: '151 cm',
+
+        medidas: {
+          busto: '95 cm',
+          cintura: '80 cm',
+          cadera: '95 cm'
+        },
+
+        preferencias: {
+
+          estilo:
+            'Elegante, femenino y cómodo',
+
+          objetivos: [
+            'verse más alta',
+            'alargar visualmente las piernas',
+            'definir la cintura',
+            'equilibrar los hombros',
+            'disimular los brazos',
+            'disimular el abdomen',
+            'marcar la silueta',
+            'verse más estilizada'
+          ],
+
+          mangas: [
+            '3/4',
+            'largas'
+          ],
+
+          prendas_preferidas: [
+            'blusas',
+            'camisas',
+            'busos',
+            'suéteres',
+            'pantalones',
+            'jeans',
+            'chaquetas',
+            'blazers',
+            'prendas de punto'
+          ],
+
+          calzado_preferido: [
+            'botines',
+            'tenis'
+          ],
+
+          colores_favoritos: [
+            'negro',
+            'vino tinto',
+            'beige'
+          ],
+
+          colores_que_no_le_gustan: [
+            'amarillo',
+            'fucsia',
+            'colores excesivamente brillantes'
+          ],
+
+          falda:
+            'No es una prenda de preferencia habitual.',
+
+          tipo_de_asesoria:
+  'Creativa: proponer opciones nuevas sin perder elegancia, feminidad, comodidad y favorecimiento de la silueta.'
+        }
+
+      };
+
+
+      const respuesta =
+        await openai.responses.create({
+
+          model:
+            OPENAI_MODEL,
+
+          input: [
+
+            {
+
+              role: 'system',
+
+              content: [
+
+                {
+
+                  type: 'input_text',
+
+                  text:
+`Eres una asesora profesional de imagen personal.
+
+Tu función es asesorar a la usuaria utilizando EXCLUSIVAMENTE
+su perfil físico, sus preferencias y las prendas que realmente
+tiene registradas en su armario digital.
+
+Debes dar recomendaciones prácticas, concretas y personalizadas.
+
+Prioridades de imagen:
+- favorecer una estatura petite de 151 cm;
+- alargar visualmente las piernas;
+- definir la cintura;
+- equilibrar visualmente los hombros;
+- disimular brazos y abdomen;
+- crear una silueta más estilizada;
+- mantener un estilo elegante, femenino y cómodo.
+
+La usuaria quiere recomendaciones creativas que puedan sacarla
+de lo habitual, pero sin ignorar sus preferencias.
+
+No debes imponer colores que ella haya indicado que no le gustan.
+Sí puedes proponer nuevos colores que probablemente armonicen
+con sus preferencias, explicando cómo incorporarlos.
+
+Cuando la consulta solicite un look, utiliza primero las prendas
+que realmente aparecen en el armario digital.
+
+No inventes prendas que no estén registradas como disponibles.
+Si falta una prenda necesaria, indícalo claramente y propone
+una alternativa utilizando las prendas disponibles.
+
+Responde en español.
+
+Evita respuestas genéricas. Explica brevemente POR QUÉ cada
+recomendación favorece sus objetivos.
+
+PERFIL DE LA USUARIA:
+${JSON.stringify(perfil, null, 2)}
+
+PRENDAS ACTUALES DEL ARMARIO:
+${JSON.stringify(closet, null, 2)}
+
+CONSULTA DE LA USUARIA:
+${consulta}`
+
+                }
+
+              ]
+
+            }
+
+          ]
+
+        });
+
+
+      res.json({
+
+        ok: true,
+
+        answer:
+          respuesta.output_text || ''
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        'Error en /api/asesoria:',
+        error
+      );
+
+      res.status(500).json({
+
+        ok: false,
+
+        error:
+          error.message ||
+          'No fue posible generar la asesoría.'
+
+      });
+
+    }
+
+  }
+);
 
 /* =========================================================
    GET /api/items
@@ -1332,6 +1548,8 @@ app.use(
 /* =========================================================
    RUTA FINAL
 ========================================================= */
+
+console.log('RUTA /api/asesoria REGISTRADA');
 
 app.use(
   (_req, res) => {
