@@ -2210,18 +2210,27 @@ function renderAdd() {
       los datos del artículo.
     </p>
 
-    <div class="add-layout">
+    <div class="add-mobile-layout">
 
-      <div class="panel">
+      <!-- FOTO -->
+      <div class="add-photo-panel">
+
+        <h2 class="add-photo-title">
+          FOTO DEL ARTÍCULO
+        </h2>
 
         <div
           id="dropzone"
-          class="dropzone">
+          class="add-dropzone">
 
           <div class="drop-content">
 
+            <div class="camera-icon">
+              +
+            </div>
+
             <strong>
-              SUBIR FOTO
+              AGREGAR FOTO
             </strong>
 
             <span>
@@ -2238,16 +2247,52 @@ function renderAdd() {
 
         </div>
 
+        <!-- Cámara -->
+        <input
+          id="file-camera"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          hidden
+        >
+
+        <!-- Galería -->
+        <input
+          id="file-gallery"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          hidden
+        >
+
+        <!-- Archivo principal -->
         <input
           id="file"
           type="file"
-          accept="
-            image/jpeg,
-            image/png,
-            image/webp
-          "
+          accept="image/jpeg,image/png,image/webp"
           hidden
         >
+
+        <div class="photo-actions">
+
+          <button
+            type="button"
+            id="camera-btn"
+            class="photo-btn">
+
+            TOMAR FOTO
+
+          </button>
+
+          <button
+            type="button"
+            id="gallery-btn"
+            class="photo-btn">
+
+            ELEGIR DE GALERÍA
+
+          </button>
+
+        </div>
 
         <div
           id="status"
@@ -2256,22 +2301,11 @@ function renderAdd() {
 
       </div>
 
-      <div class="panel">
+
+      <!-- DATOS -->
+      <div class="add-data-panel">
 
         <div class="fields">
-
-          <div class="field">
-
-            <label>
-              NOMBRE
-            </label>
-
-            <input
-              id="name"
-              placeholder="Ej. Buso rojo"
-            >
-
-          </div>
 
           <div class="field">
 
@@ -2290,9 +2324,7 @@ function renderAdd() {
                   category => `
 
                     <option
-                      value="${esc(
-                        category
-                      )}">
+                      value="${esc(category)}">
 
                       ${esc(category)}
 
@@ -2305,6 +2337,21 @@ function renderAdd() {
             </select>
 
           </div>
+
+
+          <div class="field">
+
+            <label>
+              NOMBRE
+            </label>
+
+            <input
+              id="name"
+              placeholder="Ej. Buso rojo"
+            >
+
+          </div>
+
 
           <div class="field">
 
@@ -2319,10 +2366,14 @@ function renderAdd() {
 
           </div>
 
+
           <div class="field">
 
             <label>
               DESCRIPCIÓN
+              <span class="optional-label">
+                OPCIONAL
+              </span>
             </label>
 
             <textarea
@@ -2334,7 +2385,8 @@ function renderAdd() {
 
         </div>
 
-        <div class="actions">
+
+        <div class="add-actions">
 
           <button
             class="btn secondary"
@@ -2355,6 +2407,7 @@ function renderAdd() {
 
         </div>
 
+
         <p class="small-note">
           Puedes corregir cualquier
           dato antes de guardar.
@@ -2373,20 +2426,131 @@ function renderAdd() {
   const fileInput =
     $('#file');
 
+  const cameraInput =
+    $('#file-camera');
+
+  const galleryInput =
+    $('#file-gallery');
+
+  const cameraBtn =
+    $('#camera-btn');
+
+  const galleryBtn =
+    $('#gallery-btn');
+
+
   if (
     !dropzone ||
-    !fileInput
+    !fileInput ||
+    !cameraInput ||
+    !galleryInput
   ) {
     return;
   }
 
 
+  function createFileList(file) {
+
+    try {
+
+      const dataTransfer =
+        new DataTransfer();
+
+      dataTransfer.items.add(file);
+
+      fileInput.files =
+        dataTransfer.files;
+
+    } catch (error) {
+
+      console.warn(
+        'No fue posible copiar el archivo:',
+        error
+      );
+
+    }
+
+  }
+
+
+  function selectFile(file) {
+
+    if (!file) {
+      return;
+    }
+
+    createFileList(file);
+
+    analyze(file);
+
+  }
+
+
+  /* Zona de foto */
+
   dropzone.addEventListener(
     'click',
-    () =>
-      fileInput.click()
+    () => cameraInput.click()
   );
 
+
+  /* Botón cámara */
+
+  if (cameraBtn) {
+
+    cameraBtn.addEventListener(
+      'click',
+      () => cameraInput.click()
+    );
+
+  }
+
+
+  /* Botón galería */
+
+  if (galleryBtn) {
+
+    galleryBtn.addEventListener(
+      'click',
+      () => galleryInput.click()
+    );
+
+  }
+
+
+  /* Archivo desde cámara */
+
+  cameraInput.addEventListener(
+    'change',
+    () => {
+
+      const file =
+        cameraInput.files?.[0];
+
+      selectFile(file);
+
+    }
+  );
+
+
+  /* Archivo desde galería */
+
+  galleryInput.addEventListener(
+    'change',
+    () => {
+
+      const file =
+        galleryInput.files?.[0];
+
+      selectFile(file);
+
+    }
+  );
+
+
+  /* También conservamos
+     el selector de archivo
+     original */
 
   fileInput.addEventListener(
     'change',
@@ -2402,94 +2566,6 @@ function renderAdd() {
     }
   );
 
-
-  $('#save')
-    ?.addEventListener(
-      'click',
-      saveItem
-    );
-
-}
-
-
-/* =========================================================
-   PREVISUALIZAR FOTO
-   ========================================================= */
-
-function analyze(image) {
-
-  if (!image) {
-    return;
-  }
-
-  if (
-    !image.type.startsWith(
-      'image/'
-    )
-  ) {
-
-    toast(
-      'Selecciona una imagen válida.'
-    );
-
-    return;
-  }
-
-  if (
-    image.size >
-    8 * 1024 * 1024
-  ) {
-
-    toast(
-      'La imagen no puede superar 8 MB.'
-    );
-
-    return;
-  }
-
-
-  const preview =
-    $('#preview');
-
-  const dropContent =
-    $('.drop-content');
-
-  if (!preview) {
-    return;
-  }
-
-
-  preview.src =
-    URL.createObjectURL(
-      image
-    );
-
-  preview.style.display =
-    'block';
-
-  if (dropContent) {
-    dropContent.style.display =
-      'none';
-  }
-
-
-  $('#name').value =
-    '';
-
-  $('#category').value =
-    'Busos';
-
-  $('#color').value =
-    '';
-
-  $('#description').value =
-    '';
-
-  $('#status').textContent =
-    'Foto cargada. Completa los datos del artículo y guárdalo.';
-
-  $('#save').disabled =
-    false;
 }
 
 

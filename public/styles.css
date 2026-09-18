@@ -68,6 +68,142 @@ h1 { font-size:31px; margin:0 0 7px; letter-spacing:-.03em; }
 
 @media (max-width: 768px) {
 
+  /* AGREGAR ARTÍCULO — DISEÑO MÓVIL */
+
+.add-mobile-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.add-photo-panel,
+.add-data-panel {
+  width: 100%;
+}
+
+.add-photo-title {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.add-dropzone {
+  position: relative;
+  min-height: 300px;
+  border: 1.5px dashed #cfcfcf;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.add-dropzone img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: none;
+}
+
+.add-dropzone .drop-content {
+  text-align: center;
+  color: #777;
+}
+
+.camera-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.add-dropzone strong {
+  display: block;
+  color: #222;
+  margin-bottom: 7px;
+}
+
+.add-dropzone span {
+  display: block;
+  color: #777;
+  font-size: 12px;
+}
+
+.photo-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.photo-btn {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #222;
+  border-radius: 7px;
+  background: #fff;
+  color: #222;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.optional-label {
+  font-size: 9px;
+  font-weight: 500;
+  color: #888;
+  margin-left: 5px;
+}
+
+.add-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.add-actions .btn {
+  flex: 1;
+}
+
+/* TELÉFONO */
+
+@media (max-width: 768px) {
+
+  .add-mobile-layout {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .add-photo-panel,
+  .add-data-panel {
+    width: 100%;
+  }
+
+  .add-dropzone {
+    min-height: 280px;
+  }
+
+  .photo-actions {
+    flex-direction: column;
+  }
+
+  .photo-btn {
+    width: 100%;
+    min-height: 48px;
+    font-size: 13px;
+  }
+
+  .add-actions {
+    flex-direction: column;
+  }
+
+  .add-actions .btn {
+    width: 100%;
+    min-height: 48px;
+  }
+
+}
+
   /* Estructura general */
   body {
     overflow-x: hidden;
