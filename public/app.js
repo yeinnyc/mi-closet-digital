@@ -18,14 +18,15 @@ const state = {
   selectedId: null,
   selectedLookId: null,
 
-  look: {
-    top: null,
-    bottom: null,
-    onePiece: null,
-    shoes: null,
-    bag: null,
-    accessories: []
-  }
+ look: {
+  top: null,
+  jacket: null,
+  bottom: null,
+  onePiece: null,
+  shoes: null,
+  bag: null,
+  accessories: []
+}
 };
 
 
@@ -101,23 +102,23 @@ function getImageUrl(item) {
 
   const url = String(originalUrl).trim();
 
-  let match = url.match(/[?&]id=([^&]+)/i);
+  // Google Drive: convertir al formato Googleusercontent
+let match = url.match(/[?&]id=([^&]+)/i);
 
-  if (match && match[1]) {
+if (match && match[1]) {
     return (
-      'https://drive.google.com/thumbnail?id=' +
-      encodeURIComponent(match[1]) +
-      '&sz=w1000'
+        'https://lh3.googleusercontent.com/d/' +
+        encodeURIComponent(match[1]) +
+        '=w1000'
     );
-  }
+}
 
   match = url.match(/\/file\/d\/([^/]+)/i);
 
   if (match && match[1]) {
     return (
-      'https://drive.google.com/thumbnail?id=' +
-      encodeURIComponent(match[1]) +
-      '&sz=w1000'
+      'https://drive.google.com/uc?export=view&id=' +
+      encodeURIComponent(match[1])
     );
   }
 
@@ -125,9 +126,8 @@ function getImageUrl(item) {
 
   if (match && match[1]) {
     return (
-      'https://drive.google.com/thumbnail?id=' +
-      encodeURIComponent(match[1]) +
-      '&sz=w1000'
+      'https://drive.google.com/uc?export=view&id=' +
+      encodeURIComponent(match[1])
     );
   }
 
@@ -2726,16 +2726,22 @@ async function saveItem() {
 function renderLooks() {
 
   const tops =
-    state.items.filter(
-      item =>
-        [
-          'Busos',
-          'Camisas',
-          'Chaquetas'
-        ].includes(
-          item.category
-        )
-    );
+  state.items.filter(
+    item =>
+      [
+        'Busos',
+        'Camisas'
+      ].includes(
+        item.category
+      )
+  );
+
+const jackets =
+  state.items.filter(
+    item =>
+      item.category ===
+      'Chaquetas'
+  );
 
   const bottoms =
     state.items.filter(
@@ -2877,7 +2883,7 @@ function renderLooks() {
         </strong>
 
         <span>
-          Busos, camisas o chaquetas
+          Busos o camisas
         </span>
 
       </div>
@@ -2889,6 +2895,30 @@ function renderLooks() {
 
     </div>
 
+        <!-- =================================================
+         CHAQUETAS / ABRIGOS
+         ================================================= -->
+
+    <div class="panel">
+
+      <div class="look-section-title">
+
+        <strong>
+          CHAQUETAS / ABRIGOS
+        </strong>
+
+        <span>
+          Chaquetas y prendas exteriores
+        </span>
+
+      </div>
+
+      ${renderLookSelector(
+        jackets,
+        'jacket'
+      )}
+
+    </div>
 
     <!-- =================================================
          PARTE INFERIOR
@@ -3992,6 +4022,11 @@ async function saveLook() {
       ? state.look.top.id
       : null;
 
+    const jacket =
+    state.look.jacket
+      ? state.look.jacket.id
+      : null;    
+
   const bottom =
     state.look.bottom
       ? state.look.bottom.id
@@ -4024,6 +4059,7 @@ async function saveLook() {
 
   if (
     !top &&
+    !jacket &&
     !bottom &&
     !onePiece &&
     !shoes &&
@@ -4096,6 +4132,7 @@ async function saveLook() {
             JSON.stringify({
               name: cleanName,
               top,
+              jacket,
               bottom,
               onePiece,
               shoes,
@@ -4168,6 +4205,7 @@ async function saveLook() {
 
     state.look = {
       top: null,
+      jacket: null,
       bottom: null,
       onePiece: null,
       shoes: null,
