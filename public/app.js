@@ -1,3 +1,4 @@
+
 /* =========================================================
    MI CLOSET DIGITAL
    APP.JS
@@ -6,6 +7,8 @@
 /* =========================================================
    ESTADO
    ========================================================= */
+
+   let addSelectedFile = null;
 
 const state = {
   items: [],
@@ -2472,19 +2475,87 @@ function renderAdd() {
 
   }
 
+function analyze(image) {
 
-  function selectFile(file) {
-
-    if (!file) {
-      return;
-    }
-
-    createFileList(file);
-
-    analyze(file);
-
+  if (!image) {
+    return;
   }
 
+  if (!image.type.startsWith('image/')) {
+    toast('Selecciona una imagen válida.');
+    return;
+  }
+
+  if (image.size > 8 * 1024 * 1024) {
+    toast('La imagen no puede superar 8 MB.');
+    return;
+  }
+
+  addSelectedFile = image;
+
+  const preview = $('#preview');
+  const dropContent = $('.drop-content');
+
+  if (preview) {
+    preview.src = URL.createObjectURL(image);
+    preview.style.display = 'block';
+  }
+
+  if (dropContent) {
+    dropContent.style.display = 'none';
+  }
+
+  const saveButton = $('#save');
+
+  if (saveButton) {
+    saveButton.disabled = false;
+  }
+
+  const status = $('#status');
+
+  if (status) {
+    status.textContent = 'Foto seleccionada correctamente.';
+  }
+}
+
+function selectFile(file) {
+
+    if (!file) {
+        return;
+    }
+
+    // Guardar archivo seleccionado
+    addSelectedFile = file;
+
+    // Mantener compatibilidad con el input original
+    createFileList(file);
+
+    // Mostrar vista previa
+    const preview = document.getElementById('preview');
+    const dropContent = document.querySelector('.drop-content');
+    const saveButton = document.getElementById('save');
+
+    if (preview) {
+        const imageUrl = URL.createObjectURL(file);
+
+        preview.src = imageUrl;
+        preview.alt = 'Vista previa';
+        preview.style.display = 'block';
+
+        preview.onload = () => {
+            URL.revokeObjectURL(imageUrl);
+        };
+    }
+
+    if (dropContent) {
+        dropContent.style.display = 'none';
+    }
+
+    // Permitir guardar
+    if (saveButton) {
+        saveButton.disabled = false;
+    }
+}
 
   /* Zona de foto */
 
@@ -2565,6 +2636,10 @@ function renderAdd() {
 
     }
   );
+$('#save')?.addEventListener(
+  'click',
+  saveItem
+);
 
 }
 
@@ -2575,9 +2650,9 @@ function renderAdd() {
 
 async function saveItem() {
 
-  const file =
-    $('#file')
-      ?.files?.[0];
+const file =
+  addSelectedFile ||
+  $('#file')?.files?.[0];
 
   if (!file) {
 

@@ -42,24 +42,14 @@ const upload = multer({
 
   fileFilter: (_req, file, cb) => {
 
-    const allowed = [
-      'image/jpeg',
-      'image/png',
-      'image/webp'
-    ];
-
-    if (allowed.includes(file.mimetype)) {
-
+    if (file.mimetype && file.mimetype.startsWith('image/')) {
       cb(null, true);
-
     } else {
-
       cb(
         new Error(
-          'Solo se permiten imágenes JPG, PNG o WEBP.'
+          'El archivo seleccionado no es una imagen válida.'
         )
       );
-
     }
 
   }
