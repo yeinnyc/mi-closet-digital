@@ -2,3 +2,14 @@ node_modules/
 .env
 uploads/
 data/
+# Archivos temporales de desarrollo
+*.cjs
+*.backup
+prueba-fondo.html
+public/prueba-fondo.html
+public/*.backup
+public/*.codificacion-final-prueba
+
+public/app.js.mojibake-backup
+public/app.js.ultimo-respaldo
+server.js.backup2

@@ -55,7 +55,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
 
   limits: {
-    fileSize: 8 * 1024 * 1024
+    fileSize: 20 * 1024 * 1024
   },
 
   fileFilter: (_req, file, cb) => {
@@ -120,7 +120,7 @@ function validateGoogleApi() {
   ) {
 
     throw new Error(
-      'No está configurada la variable GOOGLE_APPS_SCRIPT_URL en Render.'
+      'No estÃ¡ configurada la variable GOOGLE_APPS_SCRIPT_URL en Render.'
     );
 
   }
@@ -129,7 +129,7 @@ function validateGoogleApi() {
 
 
 /* =========================================================
-   COMUNICACIÓN CON GOOGLE APPS SCRIPT
+   COMUNICACIÃ“N CON GOOGLE APPS SCRIPT
 ========================================================= */
 
 async function callGoogleApi(data) {
@@ -169,7 +169,7 @@ async function callGoogleApi(data) {
   } catch {
 
     throw new Error(
-      'Google Apps Script devolvió una respuesta no válida.'
+      'Google Apps Script devolviÃ³ una respuesta no vÃ¡lida.'
     );
 
   }
@@ -191,7 +191,7 @@ async function callGoogleApi(data) {
 
     throw new Error(
       result.error ||
-      'Google Apps Script rechazó la solicitud.'
+      'Google Apps Script rechazÃ³ la solicitud.'
     );
 
   }
@@ -203,7 +203,7 @@ async function callGoogleApi(data) {
 
 /* =========================================================
    POST /api/asesoria
-   ASESORÍA DE IMAGEN PERSONALIZADA
+   ASESORÃA DE IMAGEN PERSONALIZADA
 ========================================================= */
 
 app.post(
@@ -254,17 +254,17 @@ app.post(
         preferencias: {
 
           estilo:
-            'Elegante, femenino y cómodo',
+            'Elegante, femenino y cÃ³modo',
 
           objetivos: [
-            'verse más alta',
+            'verse mÃ¡s alta',
             'alargar visualmente las piernas',
             'definir la cintura',
             'equilibrar los hombros',
             'disimular los brazos',
             'disimular el abdomen',
             'marcar la silueta',
-            'verse más estilizada'
+            'verse mÃ¡s estilizada'
           ],
 
           mangas: [
@@ -276,7 +276,7 @@ app.post(
             'blusas',
             'camisas',
             'busos',
-            'suéteres',
+            'suÃ©teres',
             'pantalones',
             'jeans',
             'chaquetas',
@@ -332,11 +332,11 @@ app.post(
                   text:
 `Eres una asesora profesional de imagen personal.
 
-Tu función es asesorar a la usuaria utilizando EXCLUSIVAMENTE
-su perfil físico, sus preferencias y las prendas que realmente
+Tu funciÃ³n es asesorar a la usuaria utilizando EXCLUSIVAMENTE
+su perfil fÃ­sico, sus preferencias y las prendas que realmente
 tiene registradas en su armario digital.
 
-Debes dar recomendaciones prácticas, concretas y personalizadas.
+Debes dar recomendaciones prÃ¡cticas, concretas y personalizadas.
 
 Prioridades de imagen:
 - favorecer una estatura petite de 151 cm;
@@ -344,27 +344,27 @@ Prioridades de imagen:
 - definir la cintura;
 - equilibrar visualmente los hombros;
 - disimular brazos y abdomen;
-- crear una silueta más estilizada;
-- mantener un estilo elegante, femenino y cómodo.
+- crear una silueta mÃ¡s estilizada;
+- mantener un estilo elegante, femenino y cÃ³modo.
 
 La usuaria quiere recomendaciones creativas que puedan sacarla
 de lo habitual, pero sin ignorar sus preferencias.
 
 No debes imponer colores que ella haya indicado que no le gustan.
-Sí puedes proponer nuevos colores que probablemente armonicen
-con sus preferencias, explicando cómo incorporarlos.
+SÃ­ puedes proponer nuevos colores que probablemente armonicen
+con sus preferencias, explicando cÃ³mo incorporarlos.
 
 Cuando la consulta solicite un look, utiliza primero las prendas
 que realmente aparecen en el armario digital.
 
-No inventes prendas que no estén registradas como disponibles.
-Si falta una prenda necesaria, indícalo claramente y propone
+No inventes prendas que no estÃ©n registradas como disponibles.
+Si falta una prenda necesaria, indÃ­calo claramente y propone
 una alternativa utilizando las prendas disponibles.
 
-Responde en español.
+Responde en espaÃ±ol.
 
-Evita respuestas genéricas. Explica brevemente POR QUÉ cada
-recomendación favorece sus objetivos.
+Evita respuestas genÃ©ricas. Explica brevemente POR QUÃ‰ cada
+recomendaciÃ³n favorece sus objetivos.
 
 PERFIL DE LA USUARIA:
 ${JSON.stringify(perfil, null, 2)}
@@ -409,7 +409,7 @@ ${consulta}`
 
         error:
           error.message ||
-          'No fue posible generar la asesoría.'
+          'No fue posible generar la asesorÃ­a.'
 
       });
 
@@ -420,7 +420,7 @@ ${consulta}`
 
 /* =========================================================
    GET /api/items
-   OBTENER TODOS LOS ARTÍCULOS
+   OBTENER TODOS LOS ARTÃCULOS
 ========================================================= */
 
 app.get(
@@ -447,7 +447,7 @@ app.get(
     } catch (error) {
 
       console.error(
-        'Error obteniendo artículos:',
+        'Error obteniendo artÃ­culos:',
         error
       );
 
@@ -458,7 +458,7 @@ app.get(
 
         error:
           error.message ||
-          'No se pudieron cargar los artículos.'
+          'No se pudieron cargar los artÃ­culos.'
 
       });
 
@@ -468,26 +468,37 @@ app.get(
 );
 
 
+
 /* =========================================================
    POST /api/analyze
-   ANALIZAR ARTÍCULO CON IA
+   ANALIZAR ARTÍCULO CON IA - FRENTE + ESPALDA
 ========================================================= */
 
 app.post(
   '/api/analyze',
-  upload.single('image'),
+  upload.fields([
+    { name: 'frontImage', maxCount: 1 },
+    { name: 'backImage', maxCount: 1 }
+  ]),
   async (req, res) => {
 
     try {
 
-      if (!req.file) {
+      const frontFile =
+        req.files?.frontImage?.[0];
+
+      const backFile =
+        req.files?.backImage?.[0];
+
+
+      if (!frontFile) {
 
         return res.status(400).json({
 
           ok: false,
 
           error:
-            'La foto es obligatoria.'
+            'Las fotografías de frente y espalda son obligatorias.'
 
         });
 
@@ -507,7 +518,11 @@ app.post(
 
       if (
         !allowedTypes.includes(
-          req.file.mimetype
+          frontFile.mimetype
+        ) ||
+        backFile &&
+        !allowedTypes.includes(
+          backFile.mimetype
         )
       ) {
 
@@ -516,7 +531,7 @@ app.post(
           ok: false,
 
           error:
-            'La imagen debe ser JPG, PNG o WEBP.'
+            'Las imágenes deben ser JPG, PNG o WEBP.'
 
         });
 
@@ -524,25 +539,35 @@ app.post(
 
 
       /*
-       * Convertir la imagen a Base64
+       * Convertir ambas imágenes a Base64
        */
 
-      const imageBase64 =
-        req.file.buffer.toString(
+      const frontBase64 =
+        frontFile.buffer.toString(
           'base64'
         );
 
+      const backBase64 =
+        backFile
+          ? backFile.buffer.toString('base64')
+          : null;
+
 
       /*
-       * Crear Data URL válida
+       * Crear Data URLs
        */
 
-      const imageDataUrl =
-        `data:${req.file.mimetype};base64,${imageBase64}`;
+      const frontImageDataUrl =
+        `data:${frontFile.mimetype};base64,${frontBase64}`;
+
+      const backImageDataUrl =
+        backFile
+          ? `data:${backFile.mimetype};base64,${backBase64}`
+          : null;
 
 
       /*
-       * Enviar imagen a OpenAI
+       * Enviar FRENTE + ESPALDA a OpenAI
        */
 
       const response =
@@ -565,16 +590,52 @@ app.post(
                     'input_text',
 
                   text:
-`Analiza esta fotografía de una prenda, zapato, bolso o accesorio para un armario digital.
+`Analiza estas DOS fotografías del MISMO artículo de vestir o accesorio para un armario digital.
+
+La primera imagen corresponde al FRENTE.
+La segunda imagen corresponde a la ESPALDA.
+
+Debes analizar ambas imágenes conjuntamente y tratarlas como UN SOLO ARTÍCULO.
+
+REGLA DE FIDELIDAD:
+
+  REGLA PRIORITARIA PARA EL COLOR:
+Identifica el color principal únicamente por lo que se observa directamente en las fotografías.
+Distingue cuidadosamente tonos similares, especialmente vino tinto, borgoña, rojo, rosa, fucsia y morado.
+No determines el color por el nombre, contexto o tipo de prenda.
+Si visualmente es vino tinto, no lo clasifiques como fucsia.
+
+Nunca inventes características que no sean visibles en ninguna de las dos fotografías.
+
+No supongas cómo es una parte que no puede observarse.
+
+No inventes:
+- marcas
+- logotipos
+- materiales
+- estampados
+- bolsillos
+- botones
+- cierres
+- mangas
+- capuchas
+- costuras
+- adornos
+- diseños
+- detalles de la espalda
+
+Si una característica solamente es visible en una de las fotografías, puedes describirla.
+
+Si una característica no es visible en ninguna de las dos fotografías, NO la inventes.
+
+La descripción debe basarse exclusivamente en lo que puede observarse en el frente y la espalda.
 
 Devuelve ÚNICAMENTE un JSON válido con estos campos:
 
 - name: nombre corto y específico del artículo.
 - category: EXACTAMENTE una de estas opciones: Busos, Camisas, Pantalones, Jeans, Vestidos, Faldas, Chaquetas, Zapatos, Bolsos, Accesorios, Otros.
 - color: color principal visible.
-- description: descripción breve y útil que indique tipo de prenda o artículo, color, estilo y características visibles.
-
-No inventes marcas, materiales, estampados ni características que no sean visibles.
+- description: descripción breve y útil que indique el tipo de artículo, color, estilo y características realmente visibles en cualquiera de las dos fotografías.
 
 Si tienes dudas sobre la categoría, utiliza "Otros".`
 
@@ -586,12 +647,20 @@ Si tienes dudas sobre la categoría, utiliza "Otros".`
                     'input_image',
 
                   image_url:
-                    imageDataUrl,
+                    frontImageDataUrl,
 
                   detail:
                     'high'
 
-                }
+                },
+
+                ...(backImageDataUrl
+                  ? [{
+                      type: 'input_image',
+                      image_url: backImageDataUrl,
+                      detail: 'high'
+                    }]
+                  : [])
 
               ]
 
@@ -754,7 +823,7 @@ Si tienes dudas sobre la categoría, utiliza "Otros".`
 
         error:
           error.message ||
-          'No se pudo analizar la imagen.'
+          'No se pudieron analizar las fotografías.'
 
       });
 
@@ -764,26 +833,37 @@ Si tienes dudas sobre la categoría, utiliza "Otros".`
 );
 
 
+
 /* =========================================================
    POST /api/items
-   CREAR ARTÍCULO
+   CREAR ARTÃCULO
 ========================================================= */
 
 app.post(
   '/api/items',
-  upload.single('image'),
+  upload.fields([
+    { name: 'frontImage', maxCount: 1 },
+    { name: 'backImage', maxCount: 1 }
+  ]),
   async (req, res) => {
 
     try {
 
-      if (!req.file) {
+      const frontFile =
+        req.files?.frontImage?.[0];
+
+      const backFile =
+        req.files?.backImage?.[0];
+
+
+      if (!frontFile) {
 
         return res.status(400).json({
 
           ok: false,
 
           error:
-            'La foto es obligatoria.'
+            'La foto de frente es obligatoria.'
 
         });
 
@@ -816,10 +896,16 @@ app.post(
       }
 
 
-      const imageBase64 =
-        req.file.buffer.toString(
+      const frontImageBase64 =
+        frontFile.buffer.toString(
           'base64'
         );
+
+
+      const backImageBase64 =
+        backFile
+          ? backFile.buffer.toString('base64')
+          : null;
 
 
       const result =
@@ -840,11 +926,17 @@ app.post(
           description:
             (description || '').trim(),
 
-          imageBase64:
-            imageBase64,
+          frontImageBase64:
+            frontImageBase64,
 
-          imageMimeType:
-            req.file.mimetype
+          frontImageMimeType:
+            frontFile.mimetype,
+
+          backImageBase64:
+            backImageBase64,
+
+          backImageMimeType:
+            backFile?.mimetype || null
 
         });
 
@@ -882,12 +974,6 @@ app.post(
   }
 );
 
-
-/* =========================================================
-   POST /api/items/update
-   ACTUALIZAR ARTÍCULO
-========================================================= */
-
 app.post(
   '/api/items/update',
   upload.single('image'),
@@ -911,7 +997,7 @@ app.post(
           ok: false,
 
           error:
-            'Falta el ID del artículo.'
+            'Falta el ID del artÃ­culo.'
 
         });
 
@@ -929,7 +1015,7 @@ app.post(
           ok: false,
 
           error:
-            'Nombre, categoría y color son obligatorios.'
+            'Nombre, categorÃ­a y color son obligatorios.'
 
         });
 
@@ -995,7 +1081,7 @@ app.post(
     } catch (error) {
 
       console.error(
-        'Error actualizando artículo:',
+        'Error actualizando artÃ­culo:',
         error
       );
 
@@ -1006,7 +1092,7 @@ app.post(
 
         error:
           error.message ||
-          'No se pudo actualizar el artículo.'
+          'No se pudo actualizar el artÃ­culo.'
 
       });
 
@@ -1018,7 +1104,7 @@ app.post(
 
 /* =========================================================
    DELETE /api/items/:id
-   ELIMINAR ARTÍCULO
+   ELIMINAR ARTÃCULO
 ========================================================= */
 
 app.delete(
@@ -1038,7 +1124,7 @@ app.delete(
           ok: false,
 
           error:
-            'Falta el ID del artículo.'
+            'Falta el ID del artÃ­culo.'
 
         });
 
@@ -1063,7 +1149,7 @@ app.delete(
 
         message:
           result.message ||
-          'Artículo eliminado.'
+          'ArtÃ­culo eliminado.'
 
       });
 
@@ -1071,7 +1157,7 @@ app.delete(
     } catch (error) {
 
       console.error(
-        'Error eliminando artículo:',
+        'Error eliminando artÃ­culo:',
         error
       );
 
@@ -1082,7 +1168,7 @@ app.delete(
 
         error:
           error.message ||
-          'No se pudo eliminar el artículo.'
+          'No se pudo eliminar el artÃ­culo.'
 
       });
 

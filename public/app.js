@@ -93,8 +93,55 @@ function toast(message) {
    IMÁGENES
    ========================================================= */
 
+async function convertTransparentToWebP(blob) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+
+    img.onload = () => {
+      try {
+        const maxSize = 2200;
+        const scale = Math.min(1, maxSize / Math.max(img.naturalWidth, img.naturalHeight));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.naturalWidth * scale);
+        canvas.height = Math.round(img.naturalHeight * scale);
+
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(
+          (webpBlob) => {
+            if (!webpBlob) {
+              reject(new Error('No se pudo generar WebP.'));
+              return;
+            }
+
+            resolve(webpBlob);
+          },
+          'image/webp',
+          0.88
+        );
+      } catch (error) {
+        reject(error);
+      } finally {
+        URL.revokeObjectURL(img.src);
+      }
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      reject(new Error('No se pudo cargar la imagen.'));
+    };
+
+    img.src = URL.createObjectURL(blob);
+  });
+}
+
 function getImageUrl(item) {
   const originalUrl =
+    item?.frontImage?.url ||
+    item?.frontImage ||
     item?.imageUrl ||
     item?.image ||
     '';
@@ -2205,66 +2252,92 @@ async function deleteItem(id) {
    AGREGAR ARTÍCULO
    ========================================================= */
 
+let frontFile = null;
+let backFile = null;
+
 function renderAdd() {
 
   $('#add').innerHTML = `
-
-    <h1>
-      AGREGAR ARTÍCULO
-    </h1>
+    <h1>AGREGAR ARTÍCULO</h1>
 
     <p class="subtitle">
-      Sube una foto y completa
-      los datos del artículo.
+      Sube una foto del frente y otra de la espalda del ARTÍCULO.
     </p>
 
     <div class="add-mobile-layout">
 
-      <!-- FOTO -->
       <div class="add-photo-panel">
 
         <h2 class="add-photo-title">
-          FOTO DEL ARTÍCULO
+          FOTOS DEL ARTÍCULO
         </h2>
 
-        <div
-          id="dropzone"
-          class="add-dropzone">
+        <div class="photo-view-section">
 
-          <div class="drop-content">
+          <h3>FRENTE</h3>
 
-            <div class="camera-icon">
-              +
+          <div id="dropzone-front" class="add-dropzone">
+
+            <div id="drop-content-front" class="drop-content">
+
+              <div class="camera-icon">+</div>
+
+              <strong>AGREGAR FOTO</strong>
+
+              <span>Foto de frente</span>
+
             </div>
 
-            <strong>
-              AGREGAR FOTO
-            </strong>
-
-            <span>
-              JPG, PNG o WEBP
-              · máximo 8 MB
-            </span>
+            <img
+              id="preview-front"
+              alt="Vista previa del frente"
+            >
 
           </div>
 
-          <img
-            id="preview"
-            alt="Vista previa"
+          <input
+            id="file-camera-front"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            hidden
           >
 
         </div>
 
-        <!-- Cámara -->
-        <input
-          id="file-camera"
-          type="file"
-          accept="image/*"
-          capture="environment"
-          hidden
-        >
+        <div class="photo-view-section">
 
-        <!-- Galería -->
+          <h3>ESPALDA</h3>
+
+          <div id="dropzone-back" class="add-dropzone">
+
+            <div id="drop-content-back" class="drop-content">
+
+              <div class="camera-icon">+</div>
+
+              <strong>AGREGAR FOTO</strong>
+
+              <span>Foto de espalda</span>
+
+            </div>
+
+            <img
+              id="preview-back"
+              alt="Vista previa de la espalda"
+            >
+
+          </div>
+
+          <input
+            id="file-camera-back"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            hidden
+          >
+
+        </div>
+
         <input
           id="file-gallery"
           type="file"
@@ -2272,24 +2345,7 @@ function renderAdd() {
           hidden
         >
 
-        <!-- Archivo principal -->
-        <input
-          id="file"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          hidden
-        >
-
         <div class="photo-actions">
-
-          <button
-            type="button"
-            id="camera-btn"
-            class="photo-btn">
-
-            TOMAR FOTO
-
-          </button>
 
           <button
             type="button"
@@ -2302,56 +2358,36 @@ function renderAdd() {
 
         </div>
 
-        <div
-          id="status"
-          class="status">
-        </div>
+        <div id="status" class="status"></div>
 
       </div>
 
-
-      <!-- DATOS -->
       <div class="add-data-panel">
 
         <div class="fields">
 
           <div class="field">
 
-            <label>
-              CATEGORÍA
-            </label>
+            <label>CATEGORÍA</label>
 
             <select id="category">
 
               ${categories
-                .filter(
-                  category =>
-                    category !== 'Todas'
-                )
-                .map(
-                  category => `
-
-                    <option
-                      value="${esc(category)}">
-
-                      ${esc(category)}
-
-                    </option>
-
-                  `
-                )
+                .filter(category => category !== 'Todas')
+                .map(category => `
+                  <option value="${esc(category)}">
+                    ${esc(category)}
+                  </option>
+                `)
                 .join('')}
 
             </select>
 
           </div>
 
-
           <div class="field">
 
-            <label>
-              NOMBRE
-            </label>
+            <label>NOMBRE</label>
 
             <input
               id="name"
@@ -2360,12 +2396,9 @@ function renderAdd() {
 
           </div>
 
-
           <div class="field">
 
-            <label>
-              COLOR
-            </label>
+            <label>COLOR</label>
 
             <input
               id="color"
@@ -2374,14 +2407,11 @@ function renderAdd() {
 
           </div>
 
-
           <div class="field">
 
             <label>
               DESCRIPCIÓN
-              <span class="optional-label">
-                OPCIONAL
-              </span>
+              <span class="optional-label">OPCIONAL</span>
             </label>
 
             <textarea
@@ -2392,7 +2422,6 @@ function renderAdd() {
           </div>
 
         </div>
-
 
         <div class="add-actions">
 
@@ -2415,280 +2444,255 @@ function renderAdd() {
 
         </div>
 
-
         <p class="small-note">
-          Puedes corregir cualquier
-          dato antes de guardar.
+          Debes agregar las fotos de frente y espalda antes de guardar.
         </p>
 
       </div>
 
     </div>
-
   `;
 
 
-  const dropzone =
-    $('#dropzone');
+  const dropzoneFront = $('#dropzone-front');
+  const dropzoneBack = $('#dropzone-back');
 
-  const fileInput =
-    $('#file');
+  const cameraInputFront = $('#file-camera-front');
+  const cameraInputBack = $('#file-camera-back');
 
-  const cameraInput =
-    $('#file-camera');
+  const galleryInput = $('#file-gallery');
+  const galleryBtn = $('#gallery-btn');
 
-  const galleryInput =
-    $('#file-gallery');
-
-  const cameraBtn =
-    $('#camera-btn');
-
-  const galleryBtn =
-    $('#gallery-btn');
+  const saveButton = $('#save');
 
 
   if (
-    !dropzone ||
-    !fileInput ||
-    !cameraInput ||
+    !dropzoneFront ||
+    !dropzoneBack ||
+    !cameraInputFront ||
+    !cameraInputBack ||
     !galleryInput
   ) {
     return;
   }
 
 
-  function createFileList(file) {
+
+
+  function validateImage(file) {
+
+    if (!file) {
+      return false;
+    }
+
+    if (!file.type.startsWith('image/')) {
+
+      toast('Selecciona una imagen valida.');
+
+      return false;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+
+      toast('La imagen no puede superar 8 MB.');
+
+      return false;
+    }
+
+    return true;
+  }
+
+
+  function updateSaveButton() {
+
+    if (!saveButton) {
+      return;
+    }
+
+    saveButton.disabled =
+      !frontFile;
+
+  }
+
+
+  function showPreview(file, previewId, contentId) {
+
+    const preview =
+      document.getElementById(previewId);
+
+    const dropContent =
+      document.getElementById(contentId);
+
+    if (!preview) {
+      return;
+    }
+
+    const imageUrl =
+      URL.createObjectURL(file);
+
+    preview.src = imageUrl;
+    preview.alt = 'Vista previa';
+    preview.style.display = 'block';
+
+    preview.onload = () => {
+      URL.revokeObjectURL(imageUrl);
+    };
+
+    if (dropContent) {
+      dropContent.style.display = 'none';
+    }
+
+  }
+
+
+  async function selectFrontFile(file) {
+
+    if (!validateImage(file)) {
+      return;
+    }
 
     try {
 
-      const dataTransfer =
-        new DataTransfer();
+      $('#status').textContent = 'Procesando foto de frente...';
 
-      dataTransfer.items.add(file);
+      const module = await import('https://esm.sh/@imgly/background-removal@1.7.0');
+      const cleanBlob = await module.removeBackground(file);
+      const optimizedBlob = await convertTransparentToWebP(cleanBlob);
 
-      fileInput.files =
-        dataTransfer.files;
+      frontFile = new File(
+        [optimizedBlob],
+        file.name,
+        { type: optimizedBlob.type || 'image/webp' }
+      );
+
+      showPreview(frontFile, 'preview-front', 'drop-content-front');
+
+      $('#status').textContent = backFile
+        ? 'Fotos de frente y espalda cargadas.'
+        : 'Foto de frente procesada. Ahora agrega la foto de espalda.';
+
+      updateSaveButton();
 
     } catch (error) {
 
-      console.warn(
-        'No fue posible copiar el archivo:',
-        error
-      );
+      console.error('Error al eliminar fondo:', error);
+
+      toast('No se pudo limpiar la foto. Se conservará la original.');
+
+      frontFile = file;
+
+      showPreview(file, 'preview-front', 'drop-content-front');
+
+      $('#status').textContent = backFile
+        ? 'Fotos de frente y espalda cargadas.'
+        : 'Foto de frente cargada. Ahora agrega la foto de espalda.';
+
+      updateSaveButton();
 
     }
 
   }
 
-async function analyze(image) {
+  async function selectBackFile(file) {
 
-    if (!image) {
-        return;
-    }
-
-    if (!image.type.startsWith('image/')) {
-        toast('Selecciona una imagen válida.');
-        return;
-    }
-
-    if (image.size > 8 * 1024 * 1024) {
-        toast('La imagen no puede superar 8 MB.');
-        return;
-    }
-
-    addSelectedFile = image;
-
-    const preview = document.getElementById('preview');
-    const dropContent = document.querySelector('.drop-content');
-    const saveButton = document.getElementById('save');
-    const status = document.getElementById('status');
-
-    // Mostrar vista previa
-    if (preview) {
-        const imageUrl = URL.createObjectURL(image);
-
-        preview.src = imageUrl;
-        preview.alt = 'Vista previa';
-        preview.style.display = 'block';
-
-        preview.onload = () => {
-            URL.revokeObjectURL(imageUrl);
-        };
-    }
-
-    if (dropContent) {
-        dropContent.style.display = 'none';
-    }
-
-    if (saveButton) {
-        saveButton.disabled = true;
-    }
-
-    if (status) {
-        status.textContent = 'Analizando prenda con IA...';
+    if (!validateImage(file)) {
+      return;
     }
 
     try {
 
-        const formData = new FormData();
-        formData.append('image', image);
+      $('#status').textContent = 'Procesando foto de espalda...';
 
-        const response = await fetch('/api/analyze', {
-            method: 'POST',
-            body: formData
-        });
+      const module = await import('https://esm.sh/@imgly/background-removal@1.7.0');
+      const cleanBlob = await module.removeBackground(file);
+      const optimizedBlob = await convertTransparentToWebP(cleanBlob);
 
-        const result = await response.json();
+      backFile = new File(
+        [optimizedBlob],
+        file.name,
+        { type: optimizedBlob.type || 'image/webp' }
+      );
 
-        if (!response.ok || !result.ok) {
-            throw new Error(
-                result.error || 'No se pudo analizar la imagen.'
-            );
-        }
+      showPreview(backFile, 'preview-back', 'drop-content-back');
 
-        const analysis = result.analysis;
+      $('#status').textContent = frontFile
+        ? 'Fotos de frente y espalda cargadas.'
+        : 'Foto de espalda procesada. Ahora agrega la foto de frente.';
 
-        // Completar automáticamente los campos
-        const nameInput = document.getElementById('name');
-        const categoryInput = document.getElementById('category');
-        const colorInput = document.getElementById('color');
-        const descriptionInput =
-            document.getElementById('description');
-
-        if (nameInput) {
-            nameInput.value = analysis.name || '';
-        }
-
-        if (categoryInput) {
-            categoryInput.value = analysis.category || '';
-        }
-
-        if (colorInput) {
-            colorInput.value = analysis.color || '';
-        }
-
-        if (descriptionInput) {
-            descriptionInput.value =
-                analysis.description || '';
-        }
-
-        if (status) {
-            status.textContent =
-                'Datos identificados por IA. Puedes corregirlos antes de guardar.';
-        }
+      updateSaveButton();
 
     } catch (error) {
 
-        console.error('Error analizando artículo:', error);
+      console.error('Error al eliminar fondo:', error);
 
-        if (status) {
-            status.textContent =
-                'No se pudo analizar la imagen. Puedes completar los datos manualmente.';
-        }
+      toast('No se pudo limpiar la foto. Se conservará la original.');
 
-        toast(
-            error.message ||
-            'No se pudo analizar la imagen.'
-        );
+      backFile = file;
 
-    } finally {
+      showPreview(file, 'preview-back', 'drop-content-back');
 
-        if (saveButton) {
-            saveButton.disabled = false;
-        }
-    }
-}
+      $('#status').textContent = frontFile
+        ? 'Fotos de frente y espalda cargadas.'
+        : 'Foto de espalda cargada. Ahora agrega la foto de frente.';
 
-function selectFile(file) {
+      updateSaveButton();
 
-    if (!file) {
-        return;
     }
 
-    // Guardar archivo seleccionado
-    addSelectedFile = file;
+  }
 
-    // Mantener compatibilidad con el input original
-    createFileList(file);
-
-    // Mostrar vista previa
-    const preview = document.getElementById('preview');
-    const dropContent = document.querySelector('.drop-content');
-    const saveButton = document.getElementById('save');
-
-    if (preview) {
-        const imageUrl = URL.createObjectURL(file);
-
-        preview.src = imageUrl;
-        preview.alt = 'Vista previa';
-        preview.style.display = 'block';
-
-        preview.onload = () => {
-            URL.revokeObjectURL(imageUrl);
-        };
-    }
-
-    if (dropContent) {
-        dropContent.style.display = 'none';
-    }
-
-        // Permitir guardar
-    if (saveButton) {
-        saveButton.disabled = false;
-    }
-
-    // Analizar automáticamente con IA
-    analyze(file);
-}
-
-  /* Zona de foto */
-
-  dropzone.addEventListener(
+  dropzoneFront.addEventListener(
     'click',
-    () => cameraInput.click()
+    () => cameraInputFront.click()
   );
 
 
-  /* Botón cámara */
-
-  if (cameraBtn) {
-
-    cameraBtn.addEventListener(
-      'click',
-      () => cameraInput.click()
-    );
-
-  }
-
-
-  /* Botón galería */
-
-  if (galleryBtn) {
-
-    galleryBtn.addEventListener(
-      'click',
-      () => galleryInput.click()
-    );
-
-  }
-
-
-  /* Archivo desde cámara */
-
-  cameraInput.addEventListener(
+  cameraInputFront.addEventListener(
     'change',
     () => {
 
       const file =
-        cameraInput.files?.[0];
+        cameraInputFront.files?.[0];
 
-      selectFile(file);
+      if (file) {
+        selectFrontFile(file);
+      }
 
     }
   );
 
 
-  /* Archivo desde galería */
+  dropzoneBack.addEventListener(
+    'click',
+    () => cameraInputBack.click()
+  );
+
+
+  cameraInputBack.addEventListener(
+    'change',
+    () => {
+
+      const file =
+        cameraInputBack.files?.[0];
+
+      if (file) {
+        selectBackFile(file);
+      }
+
+    }
+  );
+
+
+  galleryBtn?.addEventListener(
+    'click',
+    () => {
+
+      galleryInput.value = '';
+      galleryInput.click();
+
+    }
+  );
+
 
   galleryInput.addEventListener(
     'change',
@@ -2697,165 +2701,212 @@ function selectFile(file) {
       const file =
         galleryInput.files?.[0];
 
-      selectFile(file);
+      if (!file) {
+        return;
+      }
 
-    }
-  );
+      if (!frontFile) {
 
+        selectFrontFile(file);
 
-  /* También conservamos
-     el selector de archivo
-     original */
+      } else if (!backFile) {
 
-  fileInput.addEventListener(
-    'change',
-    () => {
+        selectBackFile(file);
 
-      const file =
-        fileInput.files?.[0];
+      } else {
 
-      if (file) {
-        analyze(file);
+        toast(
+          'Las dos fotografias ya estan cargadas.'
+        );
+
       }
 
     }
   );
-$('#save')?.addEventListener(
-  'click',
-  saveItem
-);
+
+
+  updateSaveButton();
+
+
+  saveButton?.addEventListener(
+    'click',
+    saveItem
+  );
 
 }
 
-
 /* =========================================================
    GUARDAR ARTÍCULO
-   ========================================================= */
+   FRENTE + ESPALDA
+========================================================= */
 
 async function saveItem() {
 
-const file =
-  addSelectedFile ||
-  $('#file')?.files?.[0];
-
-  if (!file) {
-
-    toast(
-      'Selecciona una foto.'
-    );
-
+  if (!frontFile) {
+    toast('Agrega la foto de frente.');
     return;
   }
 
-
-  const name =
-    $('#name')
-      .value
-      .trim();
-
-  const category =
-    $('#category')
-      .value;
-
-  const color =
-    $('#color')
-      .value
-      .trim();
-
-  const description =
-    $('#description')
-      .value
-      .trim();
-
-
-  if (!name) {
-
-    toast(
-      'Escribe el nombre del artículo.'
-    );
-
+  if (frontFile.size > 20 * 1024 * 1024) {
+    toast('La foto de frente no puede superar 8 MB.');
     return;
   }
 
-  if (!category) {
-
-    toast(
-      'Selecciona una categoría.'
-    );
-
+  if (backFile && backFile.size > 20 * 1024 * 1024) {
+    toast('La foto de espalda no puede superar 8 MB.');
     return;
   }
 
-  if (!color) {
-
-    toast(
-      'Escribe el color del artículo.'
-    );
-
-    return;
-  }
-
-  if (
-    file.size >
-    8 * 1024 * 1024
-  ) {
-
-    toast(
-      'La imagen no puede superar 8 MB.'
-    );
-
-    return;
-  }
-
-
-  const formData =
-    new FormData();
-
-  formData.append(
-    'image',
-    file
-  );
-
-  formData.append(
-    'name',
-    name
-  );
-
-  formData.append(
-    'category',
-    category
-  );
-
-  formData.append(
-    'color',
-    color
-  );
-
-  formData.append(
-    'description',
-    description
-  );
-
-
-  const saveButton =
-    $('#save');
+  const saveButton = $('#save');
 
   if (!saveButton) {
     return;
   }
 
-
-  saveButton.disabled =
-    true;
-
-  saveButton.textContent =
-    'GUARDANDO...';
+  saveButton.disabled = true;
+  saveButton.textContent = 'ANALIZANDO...';
 
   $('#status').textContent =
-    'Guardando en Google Drive y Google Sheets...';
-
+    'La IA esta analizando las fotos de frente y espalda...';
 
   try {
+
+    const analysisForm =
+      new FormData();
+
+    analysisForm.append(
+      'frontImage',
+      frontFile
+    );
+
+    if (backFile) {
+      analysisForm.append(
+        'backImage',
+        backFile
+      );
+    }
+
+    const analysisResponse =
+      await fetch(
+        '/api/analyze',
+        {
+          method: 'POST',
+          body: analysisForm
+        }
+      );
+
+    const analysisText =
+      await analysisResponse.text();
+
+    let analysisData;
+
+    try {
+
+      analysisData =
+        JSON.parse(analysisText);
+
+    } catch {
+
+      throw new Error(
+        'La IA devolvio una respuesta no valida.'
+      );
+
+    }
+
+    if (!analysisResponse.ok) {
+
+      throw new Error(
+        analysisData.error ||
+        'No se pudo analizar la prenda.'
+      );
+
+    }
+
+    if (
+      !analysisData.analysis
+    ) {
+
+      throw new Error(
+        'La IA no devolvio los datos de la prenda.'
+      );
+
+    }
+
+    const ai =
+      analysisData.analysis;
+
+    const name =
+      String(ai.name || '').trim();
+
+    const category =
+      String(ai.category || '').trim();
+
+    const color =
+      String(ai.color || '').trim();
+
+    const description =
+      String(ai.description || '').trim();
+
+    if (!name || !category || !color) {
+
+      throw new Error(
+        'La IA no pudo identificar completamente la prenda. Revisa las fotografias.'
+      );
+
+    }
+
+    $('#name').value =
+      name;
+
+    $('#category').value =
+      category;
+
+    $('#color').value =
+      color;
+
+    $('#description').value =
+      description;
+
+    saveButton.textContent =
+      'GUARDANDO...';
+
+    $('#status').textContent =
+      'identificación completada. Guardando el ARTÍCULO...';
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      'frontImage',
+      frontFile
+    );
+
+    if (backFile) {
+      formData.append(
+        'backImage',
+        backFile
+      );
+    }
+
+    formData.append(
+      'name',
+      name
+    );
+
+    formData.append(
+      'category',
+      category
+    );
+
+    formData.append(
+      'color',
+      color
+    );
+
+    formData.append(
+      'description',
+      description
+    );
 
     const response =
       await fetch(
@@ -2872,14 +2923,17 @@ const file =
     let data;
 
     try {
+
       data =
         JSON.parse(text);
-    } catch {
-      throw new Error(
-        'El servidor devolvió una respuesta no válida.'
-      );
-    }
 
+    } catch {
+
+      throw new Error(
+        'El servidor devolvio una respuesta no valida.'
+      );
+
+    }
 
     if (!response.ok) {
 
@@ -2887,8 +2941,8 @@ const file =
         data.error ||
         'No se pudo guardar.'
       );
-    }
 
+    }
 
     if (
       !data.item ||
@@ -2896,10 +2950,10 @@ const file =
     ) {
 
       throw new Error(
-        'El servidor no devolvió correctamente el artículo guardado.'
+        'El servidor no devolvio correctamente el ARTÍCULO guardado.'
       );
-    }
 
+    }
 
     state.items.unshift(
       data.item
@@ -2911,33 +2965,30 @@ const file =
     state.search =
       '';
 
-    toast(
-      'Artículo guardado correctamente.'
-    );
+    frontFile = null;
+    backFile = null;
 
+    toast(
+      'ARTÍCULO identificado y guardado correctamente.'
+    );
 
     setTimeout(
       () => {
-
-        setView(
-          'ropa'
-        );
-
+        setView('ropa');
       },
       500
     );
 
-
   } catch (error) {
 
     console.error(
-      'Error guardando artículo:',
+      'Error identificando/guardando ARTÍCULO:',
       error
     );
 
     toast(
       error.message ||
-      'No se pudo guardar.'
+      'No se pudo procesar el ARTÍCULO.'
     );
 
     saveButton.disabled =
@@ -2952,12 +3003,6 @@ const file =
   }
 
 }
-
-
-/* =========================================================
-   MIS LOOKS / CREAR LOOK
-   ========================================================= */
-
 function renderLooks() {
 
   const tops =
@@ -3902,7 +3947,7 @@ function renderLookSelector(
                         look-selected
                       ">
 
-                      ✓
+                      âœ“
 
                     </div>
 
@@ -4954,7 +4999,7 @@ try {
     .replace(/>/g, '&gt;')
     .replace(/^### (.+)$/gm, '<strong>$1</strong>')
     .replace(/^## (.+)$/gm, '<strong>$1</strong>')
-    .replace(/^\- (.+)$/gm, '• $1')
+    .replace(/^\- (.+)$/gm, 'â€¢ $1')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br>');
 
@@ -4988,7 +5033,7 @@ respuesta.innerHTML = `
         justify-content:center;
       "
     >
-      📋
+      ðŸ“‹
     </button>
 
     ${respuestaFormateada}
@@ -5009,7 +5054,7 @@ document
         'btn-copiar-asesoria'
       );
 
-    boton.innerHTML = '✓';
+    boton.innerHTML = 'âœ“';
 
     setTimeout(() => {
 
