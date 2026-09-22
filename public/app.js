@@ -157,9 +157,9 @@ let match = url.match(/[?&]id=([^&]+)/i);
 
 if (match && match[1]) {
     return (
-        'https://lh3.googleusercontent.com/d/' +
+        'https://drive.google.com/thumbnail?id=' +
         encodeURIComponent(match[1]) +
-        '=w1000'
+        '&sz=w1000'
     );
 }
 
@@ -2665,6 +2665,41 @@ function renderAdd() {
 
 
 
+async function cleanImageWithAI(imageFile) {
+
+  const formData = new FormData()
+  formData.append('image', imageFile)
+
+  const response = await fetch('/api/clean-image', {
+    method: 'POST',
+    body: formData
+  })
+
+  const data = await response.json()
+
+  if (!response.ok || !data.ok || !data.imageBase64) {
+    throw new Error(data.error || 'No se pudo generar la imagen de catálogo.')
+  }
+
+  const byteCharacters = atob(data.imageBase64)
+  const byteNumbers = new Array(byteCharacters.length)
+
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i)
+  }
+
+  const byteArray = new Uint8Array(byteNumbers)
+  const blob = new Blob(
+    [byteArray],
+    { type: data.mimeType || 'image/png' }
+  )
+
+  return new File(
+    [blob],
+    imageFile.name.replace(/\.[^/.]+$/, '') + '-catalogo.png',
+    { type: blob.type }
+  )
+}
 async function identifyItemWithAI(imageFile) {
 
     try {
@@ -2831,16 +2866,9 @@ async function selectFrontFile(file) {
       $('#status').textContent = 'Procesando foto de frente...';
 
       const processingFile = await normalizeImageForProcessing(file);
+      const catalogFile = await cleanImageWithAI(processingFile);
 
-      const module = await import('https://esm.sh/@imgly/background-removal@1.7.0');
-      const cleanBlob = await module.removeBackground(processingFile);
-      const optimizedBlob = await convertTransparentToWebP(cleanBlob);
-
-      frontFile = new File(
-        [optimizedBlob],
-        file.name,
-        { type: optimizedBlob.type || 'image/webp' }
-      );
+      frontFile = catalogFile;
 
       showPreview(frontFile, 'preview-front', 'drop-content-front');
 

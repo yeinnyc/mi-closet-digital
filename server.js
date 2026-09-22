@@ -834,6 +834,49 @@ Si tienes dudas sobre la categoría, utiliza "Otros".`
 
 
 
+ /* =========================================================
+   POST /api/clean-image
+========================================================= */
+
+app.post('/api/clean-image', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        ok: false,
+        error: 'No se recibió ninguna imagen.'
+      })
+    }
+
+    const imageFile = await OpenAI.toFile(
+      req.file.buffer,
+      req.file.originalname,
+      { type: req.file.mimetype }
+    )
+
+    const result = await openai.images.edit({
+      model: 'gpt-image-2.5-sunburst',
+      image: imageFile,
+      prompt: 'Convierte esta fotografía en una fotografía profesional de catálogo del artículo original. REGLA ABSOLUTA: el resultado debe mostrar ÚNICAMENTE el artículo, sin ninguna persona. Si la prenda está siendo usada por una persona, elimina completamente cabeza, cabello, rostro, cuello, brazos, manos, piernas, cuerpo y cualquier parte humana. Conserva exclusivamente la prenda. Mantén exactamente su forma, corte, proporciones, color real, material, textura, tejido, estampados, costuras, botones, cremalleras, bolsillos, cierres, hebillas, herrajes, asas y logotipos visibles. Si alguna parte está oculta por el cuerpo, reconstruirla únicamente cuando pueda deducirse claramente de las partes visibles, sin inventar características. Elimina completamente el fondo y todos los objetos del entorno. Coloca únicamente el artículo sobre fondo blanco puro, limpio y uniforme. Centra el artículo, muéstralo completo cuando sea posible y mejora moderadamente la iluminación y nitidez. Debe parecer una fotografía real de producto. La fidelidad al artículo original tiene prioridad absoluta sobre la estética. NO conservar ninguna parte de la persona. NO cambiar el diseño, color, corte ni proporciones. NO convertirlo en ilustración.',
+      quality: 'high',
+      size: 'auto',
+      background: 'opaque'
+    })
+
+    res.json({
+      ok: true,
+      imageBase64: result.data[0].b64_json,
+      mimeType: 'image/png'
+    })
+
+  } catch (error) {
+    console.error('Error al limpiar imagen con IA:', error)
+
+    res.status(500).json({
+      ok: false,
+      error: 'No se pudo generar la imagen de catálogo.'
+    })
+  }
+})
 /* =========================================================
    POST /api/items
    CREAR ARTÃCULO
