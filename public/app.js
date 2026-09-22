@@ -2299,11 +2299,19 @@ function renderAdd() {
             id="file-camera-front"
             type="file"
             accept="image/*"
+            capture="environment"
 
             hidden
           >
 
-        </div>
+        
+          <input
+            id="file-gallery-front"
+            type="file"
+            accept="image/*"
+            hidden
+          >
+</div>
 
         <div class="photo-view-section">
 
@@ -2332,11 +2340,61 @@ function renderAdd() {
             id="file-camera-back"
             type="file"
             accept="image/*"
+            capture="environment"
 
             hidden
           >
 
-        </div><div id="status" class="status"></div>
+        
+          <input
+            id="file-gallery-back"
+            type="file"
+            accept="image/*"
+            hidden
+          >
+</div><div id="status" class="status"></div>
+
+        <div
+          id="photo-source-modal"
+          hidden
+          style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:flex-end;justify-content:center;padding:16px;box-sizing:border-box;"
+        >
+          <div
+            style="width:min(420px,100%);background:#fff;border-radius:22px;padding:20px;box-sizing:border-box;box-shadow:0 20px 60px rgba(0,0,0,.25);"
+          >
+            <div
+              style="font-size:18px;font-weight:700;text-align:center;margin-bottom:16px;"
+            >
+              AGREGAR FOTO
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <button
+                id="photo-source-camera"
+                type="button"
+                style="border:1px solid #ddd;border-radius:16px;background:#f5f5f5;padding:18px 10px;font-weight:700;font-size:14px;cursor:pointer;"
+              >
+                C?MARA
+              </button>
+
+              <button
+                id="photo-source-gallery"
+                type="button"
+                style="border:1px solid #ddd;border-radius:16px;background:#f5f5f5;padding:18px 10px;font-weight:700;font-size:14px;cursor:pointer;"
+              >
+                GALER?A
+              </button>
+            </div>
+
+            <button
+              id="photo-source-cancel"
+              type="button"
+              style="width:100%;margin-top:12px;border:0;background:transparent;padding:12px;font-weight:600;font-size:14px;cursor:pointer;"
+            >
+              CANCELAR
+            </button>
+          </div>
+        </div>
 
       </div>
 
@@ -2438,8 +2496,13 @@ function renderAdd() {
   const cameraInputFront = $('#file-camera-front');
   const cameraInputBack = $('#file-camera-back');
 
-  const galleryInput = $('#file-gallery');
-  const galleryBtn = $('#gallery-btn');
+  const galleryInputFront = $('#file-gallery-front');
+  const galleryInputBack = $('#file-gallery-back');
+
+  const photoSourceModal = $('#photo-source-modal');
+  const photoSourceCamera = $('#photo-source-camera');
+  const photoSourceGallery = $('#photo-source-gallery');
+  const photoSourceCancel = $('#photo-source-cancel');
 
   const saveButton = $('#save');
 
@@ -2849,9 +2912,23 @@ async function selectFrontFile(file) {
 
   }
 
+  let photoSourceTarget = null;
+
+  function openPhotoSource(target) {
+    photoSourceTarget = target;
+    photoSourceModal.hidden = false;
+    photoSourceModal.style.display = 'flex';
+  }
+
+  function closePhotoSource() {
+    photoSourceTarget = null;
+    photoSourceModal.hidden = true;
+    photoSourceModal.style.display = 'none';
+  }
+
   dropzoneFront.addEventListener(
     'click',
-    () => cameraInputFront.click()
+    () => openPhotoSource('front')
   );
 
 
@@ -2872,7 +2949,7 @@ async function selectFrontFile(file) {
 
   dropzoneBack.addEventListener(
     'click',
-    () => cameraInputBack.click()
+    () => openPhotoSource('back')
   );
 
 
@@ -2890,7 +2967,75 @@ async function selectFrontFile(file) {
     }
   );
 
-  updateSaveButton();
+  
+
+  photoSourceCamera.addEventListener(
+    'click',
+    () => {
+      const target = photoSourceTarget;
+      closePhotoSource();
+
+      if (target === 'front') {
+        cameraInputFront.value = '';
+        cameraInputFront.click();
+      } else if (target === 'back') {
+        cameraInputBack.value = '';
+        cameraInputBack.click();
+      }
+    }
+  );
+
+  photoSourceGallery.addEventListener(
+    'click',
+    () => {
+      const target = photoSourceTarget;
+      closePhotoSource();
+
+      if (target === 'front') {
+        galleryInputFront.value = '';
+        galleryInputFront.click();
+      } else if (target === 'back') {
+        galleryInputBack.value = '';
+        galleryInputBack.click();
+      }
+    }
+  );
+
+  photoSourceCancel.addEventListener(
+    'click',
+    closePhotoSource
+  );
+
+  photoSourceModal.addEventListener(
+    'click',
+    event => {
+      if (event.target === photoSourceModal) {
+        closePhotoSource();
+      }
+    }
+  );
+
+  galleryInputFront.addEventListener(
+    'change',
+    () => {
+      const file = galleryInputFront.files?.[0];
+
+      if (file) {
+        selectFrontFile(file);
+      }
+    }
+  );
+
+  galleryInputBack.addEventListener(
+    'change',
+    () => {
+      const file = galleryInputBack.files?.[0];
+
+      if (file) {
+        selectBackFile(file);
+      }
+    }
+  );updateSaveButton();
 
 
   saveButton?.addEventListener(
