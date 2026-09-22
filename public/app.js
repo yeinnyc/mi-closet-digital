@@ -2261,7 +2261,7 @@ function renderAdd() {
     <h1>AGREGAR ARTÍCULO</h1>
 
     <p class="subtitle">
-      Sube una foto del frente y otra de la espalda del ARTÍCULO.
+      Agrega una foto del frente. La foto de espalda es opcional.
     </p>
 
     <div class="add-mobile-layout">
@@ -2299,7 +2299,7 @@ function renderAdd() {
             id="file-camera-front"
             type="file"
             accept="image/*"
-            capture="environment"
+
             hidden
           >
 
@@ -2332,33 +2332,11 @@ function renderAdd() {
             id="file-camera-back"
             type="file"
             accept="image/*"
-            capture="environment"
+
             hidden
           >
 
-        </div>
-
-        <input
-          id="file-gallery"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          hidden
-        >
-
-        <div class="photo-actions">
-
-          <button
-            type="button"
-            id="gallery-btn"
-            class="photo-btn">
-
-            ELEGIR DE GALERÍA
-
-          </button>
-
-        </div>
-
-        <div id="status" class="status"></div>
+        </div><div id="status" class="status"></div>
 
       </div>
 
@@ -2445,7 +2423,7 @@ function renderAdd() {
         </div>
 
         <p class="small-note">
-          Debes agregar las fotos de frente y espalda antes de guardar.
+          La foto de frente es obligatoria. La foto de espalda es opcional.
         </p>
 
       </div>
@@ -2470,8 +2448,7 @@ function renderAdd() {
     !dropzoneFront ||
     !dropzoneBack ||
     !cameraInputFront ||
-    !cameraInputBack ||
-    !galleryInput
+    !cameraInputBack
   ) {
     return;
   }
@@ -2543,9 +2520,234 @@ function renderAdd() {
     }
 
   }
+  async function normalizeImageForProcessing(file) {
+
+    if (
+      file.type !== 'image/avif' &&
+      file.type !== 'image/heic' &&
+      file.type !== 'image/heif'
+    ) {
+      return file;
+    }
+
+    const bitmap =
+      await createImageBitmap(file);
+
+    const canvas =
+      document.createElement('canvas');
+
+    canvas.width =
+      bitmap.width;
+
+    canvas.height =
+      bitmap.height;
+
+    const context =
+      canvas.getContext('2d');
+
+    context.drawImage(
+      bitmap,
+      0,
+      0
+    );
+
+    bitmap.close();
+
+    const blob =
+      await new Promise((resolve, reject) => {
+
+        canvas.toBlob(
+          result => {
+
+            if (result) {
+              resolve(result);
+            } else {
+              reject(
+                new Error(
+                  'No se pudo convertir la imagen.'
+                )
+              );
+            }
+
+          },
+          'image/jpeg',
+          0.92
+        );
+
+      });
+
+    return new File(
+      [blob],
+      file.name.replace(
+        /\.(avif|heic|heif)$/i,
+        '.jpg'
+      ),
+      {
+        type: 'image/jpeg'
+      }
+    );
+
+  }
 
 
-  async function selectFrontFile(file) {
+
+
+async function identifyItemWithAI(imageFile) {
+
+    try {
+
+      $('#status').textContent =
+        'Foto procesada. La IA esta identificando la prenda...';
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        'frontImage',
+        imageFile
+      );
+
+      const response =
+        await fetch(
+          '/api/analyze',
+          {
+            method: 'POST',
+            body: formData
+          }
+        );
+
+      const text =
+        await response.text();
+
+      let data;
+
+      try {
+
+        data =
+          JSON.parse(text);
+
+      } catch {
+
+        throw new Error(
+          'La IA devolvio una respuesta no valida.'
+        );
+
+      }
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.error ||
+          'No se pudo identificar la prenda.'
+        );
+
+      }
+
+      if (!data.analysis) {
+
+        throw new Error(
+          'La IA no devolvio los datos de la prenda.'
+        );
+
+      }
+
+      const ai =
+        data.analysis;
+
+      const name =
+        String(ai.name || '').trim();
+
+      const category =
+        String(ai.category || '').trim();
+
+      const color =
+        String(ai.color || '').trim();
+
+      const description =
+        String(ai.description || '').trim();
+
+      if (!name || !category || !color) {
+
+        throw new Error(
+          'La IA no pudo identificar completamente la prenda.'
+        );
+
+      }
+
+      $('#name').value =
+        name;
+
+      $('#category').value =
+        category;
+
+      $('#color').value =
+        color;
+
+      $('#description').value =
+        description;
+
+      $('#status').textContent =
+        'Prenda identificada. Revisa los datos y guarda el ART\u00CDCULO.';
+
+      return true;
+
+    } catch (error) {
+
+      console.error(
+        'Error identificando ARTÍCULO con IA:',
+        error
+      );
+
+      toast(
+        error.message ||
+        'No se pudo identificar la prenda.'
+      );
+
+      $('#status').textContent =
+        'Foto cargada. Puedes completar los datos manualmente.';
+
+      return false;
+
+    }
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+async function selectFrontFile(file) {
 
     if (!validateImage(file)) {
       return;
@@ -2555,8 +2757,10 @@ function renderAdd() {
 
       $('#status').textContent = 'Procesando foto de frente...';
 
+      const processingFile = await normalizeImageForProcessing(file);
+
       const module = await import('https://esm.sh/@imgly/background-removal@1.7.0');
-      const cleanBlob = await module.removeBackground(file);
+      const cleanBlob = await module.removeBackground(processingFile);
       const optimizedBlob = await convertTransparentToWebP(cleanBlob);
 
       frontFile = new File(
@@ -2567,9 +2771,11 @@ function renderAdd() {
 
       showPreview(frontFile, 'preview-front', 'drop-content-front');
 
+  await identifyItemWithAI(frontFile);
+
       $('#status').textContent = backFile
         ? 'Fotos de frente y espalda cargadas.'
-        : 'Foto de frente procesada. Ahora agrega la foto de espalda.';
+        : 'Foto de frente procesada. La foto de espalda es opcional.';
 
       updateSaveButton();
 
@@ -2585,7 +2791,7 @@ function renderAdd() {
 
       $('#status').textContent = backFile
         ? 'Fotos de frente y espalda cargadas.'
-        : 'Foto de frente cargada. Ahora agrega la foto de espalda.';
+        : 'Foto de frente cargada. La foto de espalda es opcional.';
 
       updateSaveButton();
 
@@ -2603,8 +2809,10 @@ function renderAdd() {
 
       $('#status').textContent = 'Procesando foto de espalda...';
 
+      const processingFile = await normalizeImageForProcessing(file);
+
       const module = await import('https://esm.sh/@imgly/background-removal@1.7.0');
-      const cleanBlob = await module.removeBackground(file);
+      const cleanBlob = await module.removeBackground(processingFile);
       const optimizedBlob = await convertTransparentToWebP(cleanBlob);
 
       backFile = new File(
@@ -2682,49 +2890,6 @@ function renderAdd() {
     }
   );
 
-
-  galleryBtn?.addEventListener(
-    'click',
-    () => {
-
-      galleryInput.value = '';
-      galleryInput.click();
-
-    }
-  );
-
-
-  galleryInput.addEventListener(
-    'change',
-    () => {
-
-      const file =
-        galleryInput.files?.[0];
-
-      if (!file) {
-        return;
-      }
-
-      if (!frontFile) {
-
-        selectFrontFile(file);
-
-      } else if (!backFile) {
-
-        selectBackFile(file);
-
-      } else {
-
-        toast(
-          'Las dos fotografias ya estan cargadas.'
-        );
-
-      }
-
-    }
-  );
-
-
   updateSaveButton();
 
 
@@ -2763,115 +2928,35 @@ async function saveItem() {
     return;
   }
 
-  saveButton.disabled = true;
-  saveButton.textContent = 'ANALIZANDO...';
+  const name = $('#name').value.trim();
+  const category = $('#category').value.trim();
+  const color = $('#color').value.trim();
+  const description = $('#description').value.trim();
 
-  $('#status').textContent =
-    'La IA esta analizando las fotos de frente y espalda...';
 
-  try {
+  if (
+    !$('#name').value.trim() ||
+    !$('#category').value.trim() ||
+    !$('#color').value.trim()
+  ) {
 
-    const analysisForm =
-      new FormData();
-
-    analysisForm.append(
-      'frontImage',
-      frontFile
+    toast(
+      'Completa nombre, categor\u00EDa y color antes de guardar.'
     );
 
-    if (backFile) {
-      analysisForm.append(
-        'backImage',
-        backFile
-      );
-    }
+    return;
 
-    const analysisResponse =
-      await fetch(
-        '/api/analyze',
-        {
-          method: 'POST',
-          body: analysisForm
-        }
-      );
+  }
 
-    const analysisText =
-      await analysisResponse.text();
+  saveButton.disabled = true;
 
-    let analysisData;
+  saveButton.textContent =
+    'GUARDANDO...';
 
-    try {
+  $('#status').textContent =
+    'Guardando el ARTÍCULO...';
 
-      analysisData =
-        JSON.parse(analysisText);
-
-    } catch {
-
-      throw new Error(
-        'La IA devolvio una respuesta no valida.'
-      );
-
-    }
-
-    if (!analysisResponse.ok) {
-
-      throw new Error(
-        analysisData.error ||
-        'No se pudo analizar la prenda.'
-      );
-
-    }
-
-    if (
-      !analysisData.analysis
-    ) {
-
-      throw new Error(
-        'La IA no devolvio los datos de la prenda.'
-      );
-
-    }
-
-    const ai =
-      analysisData.analysis;
-
-    const name =
-      String(ai.name || '').trim();
-
-    const category =
-      String(ai.category || '').trim();
-
-    const color =
-      String(ai.color || '').trim();
-
-    const description =
-      String(ai.description || '').trim();
-
-    if (!name || !category || !color) {
-
-      throw new Error(
-        'La IA no pudo identificar completamente la prenda. Revisa las fotografias.'
-      );
-
-    }
-
-    $('#name').value =
-      name;
-
-    $('#category').value =
-      category;
-
-    $('#color').value =
-      color;
-
-    $('#description').value =
-      description;
-
-    saveButton.textContent =
-      'GUARDANDO...';
-
-    $('#status').textContent =
-      'identificación completada. Guardando el ARTÍCULO...';
+  try {
 
     const formData =
       new FormData();
@@ -3947,7 +4032,7 @@ function renderLookSelector(
                         look-selected
                       ">
 
-                      âœ“
+                      ✔️
 
                     </div>
 
@@ -4305,7 +4390,7 @@ async function saveLook() {
     const jacket =
     state.look.jacket
       ? state.look.jacket.id
-      : null;    
+      : null;
 
   const bottom =
     state.look.bottom
@@ -4999,7 +5084,7 @@ try {
     .replace(/>/g, '&gt;')
     .replace(/^### (.+)$/gm, '<strong>$1</strong>')
     .replace(/^## (.+)$/gm, '<strong>$1</strong>')
-    .replace(/^\- (.+)$/gm, 'â€¢ $1')
+    .replace(/^\- (.+)$/gm, '\u2022 $1')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br>');
 
@@ -5033,7 +5118,7 @@ respuesta.innerHTML = `
         justify-content:center;
       "
     >
-      ðŸ“‹
+      💡
     </button>
 
     ${respuestaFormateada}
@@ -5054,7 +5139,7 @@ document
         'btn-copiar-asesoria'
       );
 
-    boton.innerHTML = 'âœ“';
+    boton.innerHTML = '✔️';
 
     setTimeout(() => {
 
