@@ -2374,16 +2374,26 @@ function renderAdd() {
                 type="button"
                 style="border:1px solid #ddd;border-radius:16px;background:#f5f5f5;padding:18px 10px;font-weight:700;font-size:14px;cursor:pointer;"
               >
-                C?MARA
-              </button>
+                <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
+                  <path d="M9 5l1.5-2h3L15 5h3a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h3z"
+                    fill="none" stroke="currentColor" stroke-width="1.8"/>
+                  <circle cx="12" cy="12" r="3.5"
+                    fill="none" stroke="currentColor" stroke-width="1.8"/>
+                </svg>\n              </button>
 
               <button
                 id="photo-source-gallery"
                 type="button"
                 style="border:1px solid #ddd;border-radius:16px;background:#f5f5f5;padding:18px 10px;font-weight:700;font-size:14px;cursor:pointer;"
               >
-                GALER?A
-              </button>
+                <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="16" rx="2"
+                    fill="none" stroke="currentColor" stroke-width="1.8"/>
+                  <circle cx="8.5" cy="9" r="1.5" fill="currentColor"/>
+                  <path d="M4.5 17l4.5-4.5 3 3 2-2 5.5 5"
+                    fill="none" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>\n              </button>
             </div>
 
             <button
