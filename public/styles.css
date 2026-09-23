@@ -2235,3 +2235,43 @@ nav button .menu-icon + span {
 
 }
 
+
+/* SELECTOR FRENTE / ESPALDA */
+.detail-photo-switch {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-top: 14px;
+}
+
+.detail-photo-btn {
+  border: 1px solid var(--mc-line);
+  background: #fff;
+  color: var(--mc-muted);
+  padding: 9px 20px;
+  min-width: 105px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+}
+
+.detail-photo-btn:first-child {
+  border-radius: 20px 0 0 20px;
+}
+
+.detail-photo-btn:last-child {
+  border-radius: 0 20px 20px 0;
+}
+
+.detail-photo-btn.active {
+  background: var(--mc-black);
+  color: #fff;
+  border-color: var(--mc-black);
+}
+
+.detail-photo-btn:hover {
+  background: var(--mc-black-soft);
+  color: #fff;
+}
+
