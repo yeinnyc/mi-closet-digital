@@ -1,4 +1,4 @@
-
+﻿
 /* =========================================================
    MI CLOSET DIGITAL
    APP.JS
@@ -1435,7 +1435,16 @@ function openDetail(id) {
 
         </div>
 
-        <div class="detail-info">
+        <div class="detail-photo-switch">
+  <button type="button" class="detail-photo-btn active" data-view="front">
+    FRENTE
+  </button>
+
+  <button type="button" class="detail-photo-btn" data-view="back">
+    ESPALDA
+  </button>
+</div>
+<div class="detail-info">
 
           <div class="detail-category">
 
@@ -1535,6 +1544,7 @@ function openDetail(id) {
     overlay
   );
 
+   overlay     .querySelectorAll('.detail-photo-btn')     .forEach(button => {       button.addEventListener('click', () => {         const image =           overlay.querySelector('.detail-photo img');          if (!image) return;          image.src =           button.dataset.view === 'back'             ? getImageUrl({ frontImage: item.backImage })             : getImageUrl(item);       });     });
 
   $('#detail-close')
     .addEventListener(
@@ -5430,3 +5440,5 @@ if (
   );
 
 }
+
+
