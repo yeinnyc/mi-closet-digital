@@ -1377,6 +1377,9 @@ function openDetail(id) {
   const imageUrl =
     getImageUrl(item);
 
+  const backImageUrl =
+    getImageUrl(item?.backImage);
+
   const overlay =
     document.createElement('div');
 
@@ -1624,6 +1627,9 @@ function openEdit(item) {
 
   const imageUrl =
     getImageUrl(item);
+
+  const backImageUrl =
+    getImageUrl(item?.backImage);
 
   overlay.innerHTML = `
 
@@ -3860,6 +3866,9 @@ function renderSavedLookItem(item) {
 
   const imageUrl =
     getImageUrl(item);
+
+  const backImageUrl =
+    getImageUrl(item?.backImage);
 
   return `
 
