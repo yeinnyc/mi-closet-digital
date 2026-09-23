@@ -2865,8 +2865,7 @@ async function selectFrontFile(file) {
 
       $('#status').textContent = 'Procesando foto de frente...';
 
-      const processingFile = await normalizeImageForProcessing(file);
-      const catalogFile = await cleanImageWithAI(processingFile);
+      const catalogFile = await cleanImageWithAI(file);
 
       frontFile = catalogFile;
 
