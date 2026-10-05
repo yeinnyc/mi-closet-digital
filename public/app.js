@@ -1,4 +1,4 @@
-﻿
+
 /* =========================================================
    MI CLOSET DIGITAL
    APP.JS
@@ -184,6 +184,34 @@ if (match && match[1]) {
   return url;
 }
 
+
+function getAsesoriaLookItems(look) {
+  const findItem = itemId => {
+    if (!itemId) {
+      return null;
+    }
+
+    return state.items.find(
+      item =>
+        String(item.id) ===
+        String(itemId)
+    ) || null;
+  };
+
+  return {
+    top: findItem(look?.top),
+    jacket: findItem(look?.jacket),
+    bottom: findItem(look?.bottom),
+    onePiece: findItem(look?.onePiece),
+    shoes: findItem(look?.shoes),
+    bag: findItem(look?.bag),
+    accessories: Array.isArray(look?.accessories)
+      ? look.accessories
+          .map(findItem)
+          .filter(Boolean)
+      : []
+  };
+}
 
 /* =========================================================
    ESTILOS PARA DETALLE / EDICIÓN / LOOKS
@@ -712,6 +740,50 @@ function injectDetailStyles() {
         grid-template-columns: 1fr;
       }
     }
+
+      /* ASESORÍA DE IMAGEN */
+      .asesoria-looks-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+        margin-top: 20px;
+      }
+
+      .asesoria-look-card {
+        overflow: hidden;
+      }
+
+      .asesoria-look-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+      }
+
+      .asesoria-look-item {
+        aspect-ratio: 3 / 4;
+        background: #f5f5f5;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+      }
+
+      .asesoria-look-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+
+      .btn-save-asesoria-look {
+        margin-top: 8px;
+      }
+
+      @media (max-width: 700px) {
+        .asesoria-looks-grid {
+          grid-template-columns: 1fr;
+        }
+      }
 
   `;
 
@@ -4233,7 +4305,7 @@ function renderLookSelector(
                         look-selected
                       ">
 
-                      ✔️
+                      ??
 
                     </div>
 
@@ -4580,6 +4652,128 @@ function renderLookPreview() {
 /* =========================================================
    GUARDAR LOOK
    ========================================================= */
+
+async function saveAsesoriaLook(look) {
+
+  if (!look) {
+    toast('No se encontró el look para guardar.');
+    return;
+  }
+
+  const top = look.top || null;
+  const jacket = look.jacket || null;
+  const bottom = look.bottom || null;
+  const onePiece = look.onePiece || null;
+  const shoes = look.shoes || null;
+  const bag = look.bag || null;
+
+  const accessories =
+    Array.isArray(look.accessories)
+      ? look.accessories
+      : [];
+
+  if (
+    !top &&
+    !jacket &&
+    !bottom &&
+    !onePiece &&
+    !shoes &&
+    !bag &&
+    accessories.length === 0
+  ) {
+    toast('El look no tiene prendas para guardar.');
+    return;
+  }
+
+  const name =
+    prompt('¿Cómo quieres llamar este look?');
+
+  if (name === null) {
+    return;
+  }
+
+  const cleanName =
+    name.trim();
+
+  if (!cleanName) {
+    toast('Escribe un nombre para el look.');
+    return;
+  }
+
+  try {
+
+    const response =
+      await fetch(
+        '/api/looks',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+
+          body:
+            JSON.stringify({
+              name: cleanName,
+              top,
+              jacket,
+              bottom,
+              onePiece,
+              shoes,
+              bag,
+              accessories
+            })
+        }
+      );
+
+    const text =
+      await response.text();
+
+    let data;
+
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(
+        'El servidor devolvió una respuesta no válida.'
+      );
+    }
+
+    if (!response.ok || !data.ok) {
+      throw new Error(
+        data.error ||
+        'No se pudo guardar el look.'
+      );
+    }
+
+    if (!Array.isArray(state.looks)) {
+      state.looks = [];
+    }
+
+    state.looks.unshift(
+      data.look
+    );
+
+    toast(
+      'Look guardado correctamente.'
+    );
+
+  } catch (error) {
+
+    console.error(
+      'Error guardando look de asesoría:',
+      error
+    );
+
+    toast(
+      error.message ||
+      'No se pudo guardar el look.'
+    );
+
+  }
+
+}
 
 async function saveLook() {
 
@@ -5278,91 +5472,103 @@ try {
   }
 
 
-  const respuestaFormateada =
-  data.answer
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/^### (.+)$/gm, '<strong>$1</strong>')
-    .replace(/^## (.+)$/gm, '<strong>$1</strong>')
-    .replace(/^\- (.+)$/gm, '\u2022 $1')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>');
+  const looks =
+    Array.isArray(data.looks)
+      ? data.looks
+      : [];
 
-respuesta.innerHTML = `
-  <div style="
-    position:relative;
-    line-height:1.7;
-    font-size:15px;
-    padding-top:45px;
-    user-select:text;
-    -webkit-user-select:text;
-  ">
+  if (!looks.length) {
 
-    <button
-      id="btn-copiar-asesoria"
-      type="button"
-      title="Copiar respuesta"
-      style="
-        position:absolute;
-        top:0;
-        right:0;
-        width:38px;
-        height:38px;
-        border:0;
-        border-radius:10px;
-        background:#222;
-        color:white;
-        cursor:pointer;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-      "
-    >
-      💡
-    </button>
+    respuesta.innerHTML =
+      '<p>No se pudieron generar propuestas de look.</p>';
 
-    ${respuestaFormateada}
+    return;
+  }
 
-  </div>
-`;
+  respuesta.innerHTML =
+    '<div class="asesoria-looks-grid">' +
 
-document
-  .getElementById('btn-copiar-asesoria')
-  .addEventListener('click', async () => {
+    looks.map((look, index) => {
 
-    await navigator.clipboard.writeText(
-      data.answer
-    );
+      const items =
+        getAsesoriaLookItems(look);
 
-    const boton =
-      document.getElementById(
-        'btn-copiar-asesoria'
-      );
+      const selectedItems = [
+        items.top,
+        items.jacket,
+        items.bottom,
+        items.onePiece,
+        items.shoes,
+        items.bag,
+        ...items.accessories
+      ].filter(Boolean);
 
-    boton.innerHTML = '✔️';
+      return `
+        <article class="panel asesoria-look-card">
 
-    setTimeout(() => {
+          <h2>
+            ${look.name || `LOOK ${index + 1}`}
+          </h2>
 
-      boton.innerHTML = `
-        <svg
-          width="19"
-          height="19"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <rect x="9" y="9" width="11" height="11" rx="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
+          <p>
+            ${look.description || ''}
+          </p>
+
+          <div class="asesoria-look-items">
+
+            ${
+              selectedItems.length
+                ? selectedItems.map(item => `
+                    <div class="asesoria-look-item">
+                      <img
+                        src="${getImageUrl(item)}"
+                        alt="${item.name || 'Prenda'}"
+                      >
+                    </div>
+                  `).join('')
+                : '<p>No se encontraron imágenes de las prendas.</p>'
+            }
+
+          </div>
+
+          <p>
+            ${look.styling || ''}
+          </p>
+
+          <button
+            class="btn btn-save-asesoria-look"
+            type="button"
+            data-look-index="${index}"
+          >
+            GUARDAR LOOK
+          </button>
+
+        </article>
       `;
 
-    }, 1500);
+    }).join('') +
 
-  });
+    '</div>';
+  respuesta
+    .querySelectorAll('.btn-save-asesoria-look')
+    .forEach(button => {
+
+      button.addEventListener('click', async () => {
+
+        const index = Number(
+          button.dataset.lookIndex
+        );
+
+        const selectedLook = looks[index];
+
+        await saveAsesoriaLook(
+          selectedLook
+        );
+
+      });
+
+    });
+
 
 } catch (error) {
 
@@ -5440,5 +5646,14 @@ if (
   );
 
 }
+
+
+
+
+
+
+
+
+
 
 
