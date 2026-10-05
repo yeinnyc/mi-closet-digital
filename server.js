@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
@@ -120,7 +120,7 @@ function validateGoogleApi() {
   ) {
 
     throw new Error(
-      'No estÃƒÂ¡ configurada la variable GOOGLE_APPS_SCRIPT_URL en Render.'
+      'No estÃƒÆ’Ã‚Â¡ configurada la variable GOOGLE_APPS_SCRIPT_URL en Render.'
     );
 
   }
@@ -129,7 +129,7 @@ function validateGoogleApi() {
 
 
 /* =========================================================
-   COMUNICACIÃƒâ€œN CON GOOGLE APPS SCRIPT
+   COMUNICACIÃƒÆ’Ã¢â‚¬Å“N CON GOOGLE APPS SCRIPT
 ========================================================= */
 
 async function callGoogleApi(data) {
@@ -169,7 +169,7 @@ async function callGoogleApi(data) {
   } catch {
 
     throw new Error(
-      'Google Apps Script devolviÃƒÂ³ una respuesta no vÃƒÂ¡lida.'
+      'Google Apps Script devolviÃƒÆ’Ã‚Â³ una respuesta no vÃƒÆ’Ã‚Â¡lida.'
     );
 
   }
@@ -191,7 +191,7 @@ async function callGoogleApi(data) {
 
     throw new Error(
       result.error ||
-      'Google Apps Script rechazÃƒÂ³ la solicitud.'
+      'Google Apps Script rechazÃƒÆ’Ã‚Â³ la solicitud.'
     );
 
   }
@@ -203,7 +203,7 @@ async function callGoogleApi(data) {
 
 /* =========================================================
    POST /api/asesoria
-   ASESORÃƒÂA DE IMAGEN PERSONALIZADA
+   ASESORÃƒÆ’Ã‚ÂA DE IMAGEN PERSONALIZADA
 ========================================================= */
 
 app.post(
@@ -254,17 +254,17 @@ app.post(
         preferencias: {
 
           estilo:
-            'Elegante, femenino y cÃƒÂ³modo',
+            'Elegante, femenino y cÃƒÆ’Ã‚Â³modo',
 
           objetivos: [
-            'verse mÃƒÂ¡s alta',
+            'verse mÃƒÆ’Ã‚Â¡s alta',
             'alargar visualmente las piernas',
             'definir la cintura',
             'equilibrar los hombros',
             'disimular los brazos',
             'disimular el abdomen',
             'marcar la silueta',
-            'verse mÃƒÂ¡s estilizada'
+            'verse mÃƒÆ’Ã‚Â¡s estilizada'
           ],
 
           mangas: [
@@ -276,7 +276,7 @@ app.post(
             'blusas',
             'camisas',
             'busos',
-            'suÃƒÂ©teres',
+            'suÃƒÆ’Ã‚Â©teres',
             'pantalones',
             'jeans',
             'chaquetas',
@@ -332,7 +332,7 @@ app.post(
                   text:
 `Eres una asesora profesional de imagen personal.
 
-Tu función es crear DOS propuestas de look visual para la usuaria.
+Tu funciÃ³n es crear DOS propuestas de look visual para la usuaria.
 
 REGLA ABSOLUTA:
 Solo puedes utilizar prendas, zapatos, bolsos y accesorios que existan realmente en el armario digital proporcionado.
@@ -342,7 +342,7 @@ NO inventes colores de prendas.
 NO inventes IDs.
 NO utilices IDs que no aparezcan en PRENDAS ACTUALES DEL ARMARIO.
 
-Cada propuesta debe utilizar los IDs reales de los artículos.
+Cada propuesta debe utilizar los IDs reales de los artÃ­culos.
 
 OBJETIVOS DE IMAGEN:
 - favorecer una estatura petite de 151 cm;
@@ -350,20 +350,20 @@ OBJETIVOS DE IMAGEN:
 - definir la cintura;
 - equilibrar visualmente los hombros;
 - disimular brazos y abdomen;
-- crear una silueta más estilizada;
-- mantener un estilo elegante, femenino y cómodo.
+- crear una silueta mÃ¡s estilizada;
+- mantener un estilo elegante, femenino y cÃ³modo.
 
 La usuaria quiere propuestas creativas que puedan sacarla de lo habitual, pero sin perder elegancia, feminidad, comodidad ni favorecimiento de la silueta.
 
 Respeta sus preferencias de color.
 Evita amarillo, fucsia y colores excesivamente brillantes.
 
-Si existen suficientes prendas apropiadas, crea DOS looks claramente diferentes entre sí.
+Si existen suficientes prendas apropiadas, crea DOS looks claramente diferentes entre sÃ­.
 
-Si una categoría no es necesaria, déjala vacía.
+Si una categorÃ­a no es necesaria, dÃ©jala vacÃ­a.
 
 FORMATO OBLIGATORIO:
-Devuelve ÚNICAMENTE JSON válido.
+Devuelve ÃšNICAMENTE JSON vÃ¡lido.
 NO escribas Markdown.
 NO escribas explicaciones fuera del JSON.
 
@@ -373,35 +373,35 @@ La estructura EXACTA debe ser:
   "looks": [
     {
       "name": "Nombre del Look 1",
-      "description": "Descripción breve del look.",
-      "top": "ID o cadena vacía",
-      "jacket": "ID o cadena vacía",
-      "bottom": "ID o cadena vacía",
-      "onePiece": "ID o cadena vacía",
-      "shoes": "ID o cadena vacía",
-      "bag": "ID o cadena vacía",
+      "description": "DescripciÃ³n breve del look.",
+      "top": "ID o cadena vacÃ­a",
+      "jacket": "ID o cadena vacÃ­a",
+      "bottom": "ID o cadena vacÃ­a",
+      "onePiece": "ID o cadena vacÃ­a",
+      "shoes": "ID o cadena vacÃ­a",
+      "bag": "ID o cadena vacÃ­a",
       "accessories": ["ID", "ID"],
-      "styling": "Explicación breve de por qué favorece la silueta y cómo llevarlo."
+      "styling": "ExplicaciÃ³n breve de por quÃ© favorece la silueta y cÃ³mo llevarlo."
     },
     {
       "name": "Nombre del Look 2",
-      "description": "Descripción breve del look.",
-      "top": "ID o cadena vacía",
-      "jacket": "ID o cadena vacía",
-      "bottom": "ID o cadena vacía",
-      "onePiece": "ID o cadena vacía",
-      "shoes": "ID o cadena vacía",
-      "bag": "ID o cadena vacía",
+      "description": "DescripciÃ³n breve del look.",
+      "top": "ID o cadena vacÃ­a",
+      "jacket": "ID o cadena vacÃ­a",
+      "bottom": "ID o cadena vacÃ­a",
+      "onePiece": "ID o cadena vacÃ­a",
+      "shoes": "ID o cadena vacÃ­a",
+      "bag": "ID o cadena vacÃ­a",
       "accessories": ["ID", "ID"],
-      "styling": "Explicación breve de por qué favorece la silueta y cómo llevarlo."
+      "styling": "ExplicaciÃ³n breve de por quÃ© favorece la silueta y cÃ³mo llevarlo."
     }
   ]
 }
 
 IMPORTANTE:
-- "top", "jacket", "bottom", "onePiece", "shoes" y "bag" deben contener únicamente IDs existentes.
-- "accessories" debe contener únicamente IDs existentes.
-- Si no hay un artículo apropiado para una categoría, utiliza "".
+- "top", "jacket", "bottom", "onePiece", "shoes" y "bag" deben contener Ãºnicamente IDs existentes.
+- "accessories" debe contener Ãºnicamente IDs existentes.
+- Si no hay un artÃ­culo apropiado para una categorÃ­a, utiliza "".
 - No repitas necesariamente las mismas prendas en los dos looks.
 - Los dos looks deben ser visualmente diferentes cuando el armario lo permita.
 
@@ -435,12 +435,12 @@ ${consulta}`
       } catch (parseError) {
 
         console.error(
-          'Respuesta JSON inválida de la IA:',
+          'Respuesta JSON invÃ¡lida de la IA:',
           respuesta.output_text
         );
 
         throw new Error(
-          'La IA no devolvió una estructura de looks válida.'
+          'La IA no devolviÃ³ una estructura de looks vÃ¡lida.'
         );
 
       }
@@ -468,7 +468,7 @@ ${consulta}`
 
         error:
           error.message ||
-          'No fue posible generar la asesorÃƒÂ­a.'
+          'No fue posible generar la asesorÃƒÆ’Ã‚Â­a.'
 
       });
 
@@ -479,7 +479,7 @@ ${consulta}`
 
 /* =========================================================
    GET /api/items
-   OBTENER TODOS LOS ARTÃƒÂCULOS
+   OBTENER TODOS LOS ARTÃƒÆ’Ã‚ÂCULOS
 ========================================================= */
 
 app.get(
@@ -506,7 +506,7 @@ app.get(
     } catch (error) {
 
       console.error(
-        'Error obteniendo artÃƒÂ­culos:',
+        'Error obteniendo artÃƒÆ’Ã‚Â­culos:',
         error
       );
 
@@ -517,7 +517,7 @@ app.get(
 
         error:
           error.message ||
-          'No se pudieron cargar los artÃƒÂ­culos.'
+          'No se pudieron cargar los artÃƒÆ’Ã‚Â­culos.'
 
       });
 
@@ -530,7 +530,7 @@ app.get(
 
 /* =========================================================
    POST /api/analyze
-   ANALIZAR ARTÃCULO CON IA - FRENTE + ESPALDA
+   ANALIZAR ARTÃƒÂCULO CON IA - FRENTE + ESPALDA
 ========================================================= */
 
 app.post(
@@ -557,7 +557,7 @@ app.post(
           ok: false,
 
           error:
-            'Las fotografÃ­as de frente y espalda son obligatorias.'
+            'Las fotografÃƒÂ­as de frente y espalda son obligatorias.'
 
         });
 
@@ -590,7 +590,7 @@ app.post(
           ok: false,
 
           error:
-            'Las imÃ¡genes deben ser JPG, PNG o WEBP.'
+            'Las imÃƒÂ¡genes deben ser JPG, PNG o WEBP.'
 
         });
 
@@ -598,7 +598,7 @@ app.post(
 
 
       /*
-       * Convertir ambas imÃ¡genes a Base64
+       * Convertir ambas imÃƒÂ¡genes a Base64
        */
 
       const frontBase64 =
@@ -649,24 +649,24 @@ app.post(
                     'input_text',
 
                   text:
-`Analiza estas DOS fotografÃ­as del MISMO artÃ­culo de vestir o accesorio para un armario digital.
+`Analiza estas DOS fotografÃƒÂ­as del MISMO artÃƒÂ­culo de vestir o accesorio para un armario digital.
 
 La primera imagen corresponde al FRENTE.
 La segunda imagen corresponde a la ESPALDA.
 
-Debes analizar ambas imÃ¡genes conjuntamente y tratarlas como UN SOLO ARTÃCULO.
+Debes analizar ambas imÃƒÂ¡genes conjuntamente y tratarlas como UN SOLO ARTÃƒÂCULO.
 
 REGLA DE FIDELIDAD:
 
   REGLA PRIORITARIA PARA EL COLOR:
-Identifica el color principal Ãºnicamente por lo que se observa directamente en las fotografÃ­as.
-Distingue cuidadosamente tonos similares, especialmente vino tinto, borgoÃ±a, rojo, rosa, fucsia y morado.
+Identifica el color principal ÃƒÂºnicamente por lo que se observa directamente en las fotografÃƒÂ­as.
+Distingue cuidadosamente tonos similares, especialmente vino tinto, borgoÃƒÂ±a, rojo, rosa, fucsia y morado.
 No determines el color por el nombre, contexto o tipo de prenda.
 Si visualmente es vino tinto, no lo clasifiques como fucsia.
 
-Nunca inventes caracterÃ­sticas que no sean visibles en ninguna de las dos fotografÃ­as.
+Nunca inventes caracterÃƒÂ­sticas que no sean visibles en ninguna de las dos fotografÃƒÂ­as.
 
-No supongas cÃ³mo es una parte que no puede observarse.
+No supongas cÃƒÂ³mo es una parte que no puede observarse.
 
 No inventes:
 - marcas
@@ -680,23 +680,23 @@ No inventes:
 - capuchas
 - costuras
 - adornos
-- diseÃ±os
+- diseÃƒÂ±os
 - detalles de la espalda
 
-Si una caracterÃ­stica solamente es visible en una de las fotografÃ­as, puedes describirla.
+Si una caracterÃƒÂ­stica solamente es visible en una de las fotografÃƒÂ­as, puedes describirla.
 
-Si una caracterÃ­stica no es visible en ninguna de las dos fotografÃ­as, NO la inventes.
+Si una caracterÃƒÂ­stica no es visible en ninguna de las dos fotografÃƒÂ­as, NO la inventes.
 
-La descripciÃ³n debe basarse exclusivamente en lo que puede observarse en el frente y la espalda.
+La descripciÃƒÂ³n debe basarse exclusivamente en lo que puede observarse en el frente y la espalda.
 
-Devuelve ÃšNICAMENTE un JSON vÃ¡lido con estos campos:
+Devuelve ÃƒÅ¡NICAMENTE un JSON vÃƒÂ¡lido con estos campos:
 
-- name: nombre corto y especÃ­fico del artÃ­culo.
+- name: nombre corto y especÃƒÂ­fico del artÃƒÂ­culo.
 - category: EXACTAMENTE una de estas opciones: Busos, Camisas, Pantalones, Jeans, Vestidos, Faldas, Chaquetas, Zapatos, Bolsos, Accesorios, Otros.
 - color: color principal visible.
-- description: descripciÃ³n breve y Ãºtil que indique el tipo de artÃ­culo, color, estilo y caracterÃ­sticas realmente visibles en cualquiera de las dos fotografÃ­as.
+- description: descripciÃƒÂ³n breve y ÃƒÂºtil que indique el tipo de artÃƒÂ­culo, color, estilo y caracterÃƒÂ­sticas realmente visibles en cualquiera de las dos fotografÃƒÂ­as.
 
-Si tienes dudas sobre la categorÃ­a, utiliza "Otros".`
+Si tienes dudas sobre la categorÃƒÂ­a, utiliza "Otros".`
 
                 },
 
@@ -849,7 +849,7 @@ Si tienes dudas sobre la categorÃ­a, utiliza "Otros".`
       } catch {
 
         throw new Error(
-          'La IA respondiÃ³ en un formato que no se pudo interpretar.'
+          'La IA respondiÃƒÂ³ en un formato que no se pudo interpretar.'
         );
 
       }
@@ -871,7 +871,7 @@ Si tienes dudas sobre la categorÃ­a, utiliza "Otros".`
     } catch (error) {
 
       console.error(
-        'Error analizando artÃ­culo con IA:',
+        'Error analizando artÃƒÂ­culo con IA:',
         error
       );
 
@@ -882,7 +882,7 @@ Si tienes dudas sobre la categorÃ­a, utiliza "Otros".`
 
         error:
           error.message ||
-          'No se pudieron analizar las fotografÃ­as.'
+          'No se pudieron analizar las fotografÃƒÂ­as.'
 
       });
 
@@ -995,19 +995,19 @@ app.post('/api/asesoria/visual', async (req, res) => {
 
 
     const prompt = `
-Crea una imagen visual de asesoría de moda utilizando
+Crea una imagen visual de asesorÃ­a de moda utilizando
 EXACTAMENTE el modelo de referencia de la primera imagen.
 
 Conserva el estilo visual del modelo de referencia.
-Debe parecer una presentación profesional de moda.
+Debe parecer una presentaciÃ³n profesional de moda.
 
-Utiliza ÚNICAMENTE las prendas mostradas en las imágenes
+Utiliza ÃšNICAMENTE las prendas mostradas en las imÃ¡genes
 posteriores.
 
 NO inventes prendas.
-NO agregues prendas que no estén en las imágenes.
+NO agregues prendas que no estÃ©n en las imÃ¡genes.
 NO cambies colores.
-NO cambies diseños.
+NO cambies diseÃ±os.
 NO sustituyas las prendas.
 
 Look:
@@ -1016,8 +1016,7 @@ ${look.description || ''}
 Estilismo:
 ${look.styling || ''}
 
-Muestra el look completo de cuerpo entero.
-Fondo limpio y neutro.
+Muestra UN SOLO LOOK COMPLETO, de cuerpo entero, en una sola imagen continua. La persona debe verse completa desde la cabeza hasta los pies. NO hagas collage. NO hagas paneles. NO hagas vistas laterales. NO hagas vistas traseras. NO hagas acercamientos ni recortes de prendas. NO dividas la imagen en partes. Fondo limpio y neutro.
 Sin texto.
 Sin logotipos inventados.
 `;
@@ -1040,7 +1039,7 @@ Sin logotipos inventados.
   } catch (error) {
 
     console.error(
-      'Error generando visual de asesoría:',
+      'Error generando visual de asesorÃ­a:',
       error
     );
 
@@ -1062,7 +1061,7 @@ app.post('/api/clean-image', upload.single('image'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         ok: false,
-        error: 'No se recibiÃ³ ninguna imagen.'
+        error: 'No se recibiÃƒÂ³ ninguna imagen.'
       })
     }
 
@@ -1075,7 +1074,7 @@ app.post('/api/clean-image', upload.single('image'), async (req, res) => {
     const result = await openai.images.edit({
       model: 'gpt-image-2.5-sunburst',
       image: imageFile,
-      prompt: 'Convierte esta fotografÃ­a en una fotografÃ­a profesional de catÃ¡logo del artÃ­culo original. REGLA ABSOLUTA: el resultado debe mostrar ÃšNICAMENTE el artÃ­culo, sin ninguna persona. Si la prenda estÃ¡ siendo usada por una persona, elimina completamente cabeza, cabello, rostro, cuello, brazos, manos, piernas, cuerpo y cualquier parte humana. Conserva exclusivamente la prenda. MantÃ©n exactamente su forma, corte, proporciones, color real, material, textura, tejido, estampados, costuras, botones, cremalleras, bolsillos, cierres, hebillas, herrajes, asas y logotipos visibles. Si alguna parte estÃ¡ oculta por el cuerpo, reconstruirla Ãºnicamente cuando pueda deducirse claramente de las partes visibles, sin inventar caracterÃ­sticas. Elimina completamente el fondo y todos los objetos del entorno. Coloca Ãºnicamente el artÃ­culo sobre fondo blanco puro, limpio y uniforme. Centra el artÃ­culo, muÃ©stralo completo cuando sea posible y mejora moderadamente la iluminaciÃ³n y nitidez. Debe parecer una fotografÃ­a real de producto. La fidelidad al artÃ­culo original tiene prioridad absoluta sobre la estÃ©tica. NO conservar ninguna parte de la persona. NO cambiar el diseÃ±o, color, corte ni proporciones. NO convertirlo en ilustraciÃ³n.',
+      prompt: 'Convierte esta fotografÃƒÂ­a en una fotografÃƒÂ­a profesional de catÃƒÂ¡logo del artÃƒÂ­culo original. REGLA ABSOLUTA: el resultado debe mostrar ÃƒÅ¡NICAMENTE el artÃƒÂ­culo, sin ninguna persona. Si la prenda estÃƒÂ¡ siendo usada por una persona, elimina completamente cabeza, cabello, rostro, cuello, brazos, manos, piernas, cuerpo y cualquier parte humana. Conserva exclusivamente la prenda. MantÃƒÂ©n exactamente su forma, corte, proporciones, color real, material, textura, tejido, estampados, costuras, botones, cremalleras, bolsillos, cierres, hebillas, herrajes, asas y logotipos visibles. Si alguna parte estÃƒÂ¡ oculta por el cuerpo, reconstruirla ÃƒÂºnicamente cuando pueda deducirse claramente de las partes visibles, sin inventar caracterÃƒÂ­sticas. Elimina completamente el fondo y todos los objetos del entorno. Coloca ÃƒÂºnicamente el artÃƒÂ­culo sobre fondo blanco puro, limpio y uniforme. Centra el artÃƒÂ­culo, muÃƒÂ©stralo completo cuando sea posible y mejora moderadamente la iluminaciÃƒÂ³n y nitidez. Debe parecer una fotografÃƒÂ­a real de producto. La fidelidad al artÃƒÂ­culo original tiene prioridad absoluta sobre la estÃƒÂ©tica. NO conservar ninguna parte de la persona. NO cambiar el diseÃƒÂ±o, color, corte ni proporciones. NO convertirlo en ilustraciÃƒÂ³n.',
       quality: 'high',
       size: 'auto',
       background: 'opaque'
@@ -1092,13 +1091,13 @@ app.post('/api/clean-image', upload.single('image'), async (req, res) => {
 
     res.status(500).json({
       ok: false,
-      error: 'No se pudo generar la imagen de catÃ¡logo.'
+      error: 'No se pudo generar la imagen de catÃƒÂ¡logo.'
     })
   }
 })
 /* =========================================================
    POST /api/items
-   CREAR ARTÃƒÂCULO
+   CREAR ARTÃƒÆ’Ã‚ÂCULO
 ========================================================= */
 
 app.post(
@@ -1151,7 +1150,7 @@ app.post(
           ok: false,
 
           error:
-            'Nombre, categorÃ­a y color son obligatorios.'
+            'Nombre, categorÃƒÂ­a y color son obligatorios.'
 
         });
 
@@ -1216,7 +1215,7 @@ app.post(
     } catch (error) {
 
       console.error(
-        'Error guardando artÃ­culo:',
+        'Error guardando artÃƒÂ­culo:',
         error
       );
 
@@ -1227,7 +1226,7 @@ app.post(
 
         error:
           error.message ||
-          'No se pudo guardar el artÃ­culo.'
+          'No se pudo guardar el artÃƒÂ­culo.'
 
       });
 
@@ -1259,7 +1258,7 @@ app.post(
           ok: false,
 
           error:
-            'Falta el ID del artÃƒÂ­culo.'
+            'Falta el ID del artÃƒÆ’Ã‚Â­culo.'
 
         });
 
@@ -1277,7 +1276,7 @@ app.post(
           ok: false,
 
           error:
-            'Nombre, categorÃƒÂ­a y color son obligatorios.'
+            'Nombre, categorÃƒÆ’Ã‚Â­a y color son obligatorios.'
 
         });
 
@@ -1343,7 +1342,7 @@ app.post(
     } catch (error) {
 
       console.error(
-        'Error actualizando artÃƒÂ­culo:',
+        'Error actualizando artÃƒÆ’Ã‚Â­culo:',
         error
       );
 
@@ -1354,7 +1353,7 @@ app.post(
 
         error:
           error.message ||
-          'No se pudo actualizar el artÃƒÂ­culo.'
+          'No se pudo actualizar el artÃƒÆ’Ã‚Â­culo.'
 
       });
 
@@ -1366,7 +1365,7 @@ app.post(
 
 /* =========================================================
    DELETE /api/items/:id
-   ELIMINAR ARTÃƒÂCULO
+   ELIMINAR ARTÃƒÆ’Ã‚ÂCULO
 ========================================================= */
 
 app.delete(
@@ -1386,7 +1385,7 @@ app.delete(
           ok: false,
 
           error:
-            'Falta el ID del artÃƒÂ­culo.'
+            'Falta el ID del artÃƒÆ’Ã‚Â­culo.'
 
         });
 
@@ -1411,7 +1410,7 @@ app.delete(
 
         message:
           result.message ||
-          'ArtÃƒÂ­culo eliminado.'
+          'ArtÃƒÆ’Ã‚Â­culo eliminado.'
 
       });
 
@@ -1419,7 +1418,7 @@ app.delete(
     } catch (error) {
 
       console.error(
-        'Error eliminando artÃƒÂ­culo:',
+        'Error eliminando artÃƒÆ’Ã‚Â­culo:',
         error
       );
 
@@ -1430,7 +1429,7 @@ app.delete(
 
         error:
           error.message ||
-          'No se pudo eliminar el artÃƒÂ­culo.'
+          'No se pudo eliminar el artÃƒÆ’Ã‚Â­culo.'
 
       });
 
@@ -1945,4 +1944,6 @@ app.listen(
 
   }
 );
+
+
 
