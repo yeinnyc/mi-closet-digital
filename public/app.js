@@ -4653,6 +4653,70 @@ function renderLookPreview() {
    GUARDAR LOOK
    ========================================================= */
 
+async function generateAsesoriaVisual(look) {
+
+  if (!look) {
+    toast('No se encontró el look para generar el visual.');
+    return;
+  }
+
+  try {
+
+    toast('Generando visual del look...');
+
+    const modelDataUrl =
+      '/modelo-referencia.png';
+
+    const response =
+      await fetch('/api/asesoria/visual', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          look,
+          modelImage: modelDataUrl
+        })
+      });
+
+    const text =
+      await response.text();
+
+    let data;
+
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(
+        'El servidor devolvió una respuesta no válida.'
+      );
+    }
+
+    if (!response.ok || !data.ok) {
+      throw new Error(
+        data.error ||
+        'No se pudo generar el visual del look.'
+      );
+    }
+
+    return data.imageBase64;
+
+  } catch (error) {
+
+    console.error(
+      'Error generando visual de asesoría:',
+      error
+    );
+
+    toast(
+      error.message ||
+      'No se pudo generar el visual del look.'
+    );
+
+    return null;
+  }
+}
+
 async function saveAsesoriaLook(look) {
 
   if (!look) {
@@ -5535,12 +5599,21 @@ try {
             ${look.styling || ''}
           </p>
 
+          <div
+            class="asesoria-look-visual-card"
+            data-look-visual="${index}"
+          >
+            <div class="asesoria-look-visual-placeholder">
+              <span>VISUAL DEL LOOK</span>
+              <small>Aquí aparecerá la imagen generada</small>
+            </div>
+          </div>
           <button
             class="btn btn-save-asesoria-look"
             type="button"
             data-look-index="${index}"
           >
-            GUARDAR LOOK
+            GENERAR VISUAL
           </button>
 
         </article>
@@ -5561,9 +5634,52 @@ try {
 
         const selectedLook = looks[index];
 
-        await saveAsesoriaLook(
-          selectedLook
-        );
+        button.disabled = true;
+        button.textContent = 'GENERANDO...';
+
+        const imageBase64 =
+          await generateAsesoriaVisual(
+            selectedLook
+          );
+
+        if (imageBase64) {
+
+          const article =
+            button.closest(
+              '.asesoria-look-card'
+            );
+
+          if (article) {
+
+            let visual =
+              article.querySelector(
+                '.asesoria-look-visual'
+              );
+
+            if (!visual) {
+
+              visual =
+                document.createElement(
+                  'img'
+                );
+
+              visual.className =
+                'asesoria-look-visual';
+
+              visual.alt =
+                'Visual del look';
+
+              button.before(visual);
+            }
+
+            visual.src =
+              'data:image/png;base64,' +
+              imageBase64;
+          }
+        }
+
+        button.disabled = false;
+        button.textContent = 'GUARDAR LOOK';
 
       });
 

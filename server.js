@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
@@ -945,13 +945,19 @@ app.post('/api/asesoria/visual', async (req, res) => {
       });
     }
 
-    const imageInputs = [
-      {
-        type: 'input_image',
-        image_url: modelImage,
-        detail: 'high'
-      }
-    ];
+    const imageInputs = [];
+
+    const modelBuffer = await fs.readFile(
+      path.join(__dirname, 'public', 'modelo-referencia.png')
+    );
+
+    imageInputs.push(
+      await OpenAI.toFile(
+        modelBuffer,
+        'modelo-referencia.png',
+        { type: 'image/png' }
+      )
+    );
 
     for (const item of selectedItems) {
 
@@ -962,17 +968,12 @@ app.post('/api/asesoria/visual', async (req, res) => {
         item?.image ||
         '';
 
-      if (!originalUrl) {
-        continue;
-      }
+      if (!originalUrl) continue;
 
       const imageResponse = await fetch(originalUrl);
 
       if (!imageResponse.ok) {
-        console.warn(
-          'No se pudo descargar imagen:',
-          item.id
-        );
+        console.warn('No se pudo descargar imagen:', item.id);
         continue;
       }
 
@@ -981,18 +982,17 @@ app.post('/api/asesoria/visual', async (req, res) => {
       );
 
       const mimeType =
-        imageResponse.headers.get('content-type') ||
-        'image/jpeg';
+        imageResponse.headers.get('content-type') || 'image/jpeg';
 
-      const dataUrl =
-        `data:${mimeType};base64,${buffer.toString('base64')}`;
-
-      imageInputs.push({
-        type: 'input_image',
-        image_url: dataUrl,
-        detail: 'high'
-      });
+      imageInputs.push(
+        await OpenAI.toFile(
+          buffer,
+          String(item.id) + '.jpg',
+          { type: mimeType }
+        )
+      );
     }
+
 
     const prompt = `
 Crea una imagen visual de asesoría de moda utilizando
