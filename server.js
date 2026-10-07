@@ -103,6 +103,19 @@ const PROFILE = {
 
 async function getItems(){ const r=await google({action:'list'}); return Array.isArray(r.items)?r.items:[]; }
 async function getLooks(){ const r=await google({action:'listLooks'}); return Array.isArray(r.looks)?r.looks:[]; }
+
+async function getProfile(){
+  const r = await google({action:'getProfile'});
+  return r.profile || null;
+}
+
+async function updateProfile(data){
+  const r = await google({
+    action:'updateProfile',
+    ...data
+  });
+  return r.profile || null;
+}
 function ok(res,data,status=200){return res.status(status).json({ok:true,...data});}
 function fail(res,error,status=500){return res.status(status).json({ok:false,error:error?.message||String(error)||'Error interno.'});}
 
@@ -126,6 +139,22 @@ app.get('/api/health', async (_req, res) => {
     });
   } catch (error) {
     return fail(res, error, 503);
+  }
+});
+
+app.get('/api/profile', async (_req,res)=>{
+  try{
+    return ok(res,{profile:await getProfile()});
+  }catch(e){
+    return fail(res,e);
+  }
+});
+
+app.put('/api/profile', async (req,res)=>{
+  try{
+    return ok(res,{profile:await updateProfile(req.body || {})});
+  }catch(e){
+    return fail(res,e);
   }
 });
 app.get('/api/meta', (_req,res)=>ok(res,{categories:CATEGORIES,profile:PROFILE}));
