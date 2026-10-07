@@ -1,0 +1,17 @@
+{
+  "name": "mi-closet-digital-v2",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check": "node tests/check-encoding.mjs && node --check server.js && node --check lib/validators.js && node --check lib/openai-service.js && node --check public/js/api.js && node --check public/js/app.js && node --check public/js/catalogo.js && node --check public/js/looks.js && node --check public/js/asesoria.js"
+  },
+  "dependencies": {
+    "dotenv": "latest",
+    "express": "latest",
+    "multer": "latest",
+    "openai": "latest"
+  }
+}

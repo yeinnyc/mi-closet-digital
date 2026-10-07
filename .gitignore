@@ -1,0 +1,14 @@
+node_modules/
+.env
+.DS_Store
+npm-debug.log*
+
+# Copias y respaldos locales
+BACKUPS/
+V2_ESTABILIZADA/
+V2_LIMPIA_FINAL/
+V2_ESTABILIZADA.zip
+V2_LIMPIA_FINAL.zip
+V2_REVISION.zip
+server.js.backup-*
+public/js/*.backup-*
