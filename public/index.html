@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Mi Closet Digital V2</title>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#166534">
 </head>
 <body>
   <aside class="sidebar">
@@ -13,13 +13,13 @@
       <button class="nav-item active" data-view="dashboard">Inicio</button>
       <button class="nav-item" data-view="catalogo">Mi ropa</button>
       <button class="nav-item" data-view="looks">Mis looks</button>
-      <button class="nav-item" data-view="asesoria">Asesoría de imagen</button>
+      <button class="nav-item" data-view="asesoria">AsesorÃ­a de imagen</button>
     </nav>
     <div class="sidebar-status"><span id="api-dot"></span><span id="api-status">Conectando...</span></div>
   </aside>
 
   <main class="main">
-    <header class="topbar"><div><p class="eyebrow">GESTIÓN PERSONAL DEL ARMARIO</p><h1 id="page-title">Inicio</h1></div><button id="btn-refresh" class="btn btn-secondary">Actualizar</button></header>
+    <header class="topbar"><div><p class="eyebrow">GESTIÃ“N PERSONAL DEL ARMARIO</p><h1 id="page-title">Inicio</h1></div><button id="btn-refresh" class="btn btn-secondary">Actualizar</button></header>
 
     <section id="view-dashboard" class="view active"></section>
     <section id="view-catalogo" class="view"></section>
@@ -27,7 +27,7 @@
     <section id="view-asesoria" class="view"></section>
   </main>
 
-  <div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h2 id="modal-title"></h2><button id="modal-close" class="icon-btn">×</button></div><div id="modal-body"></div></div></div>
+  <div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h2 id="modal-title"></h2><button id="modal-close" class="icon-btn">Ã—</button></div><div id="modal-body"></div></div></div>
   <div id="toast" class="toast"></div>
   <script type="module" src="/js/app.js"></script>
 </body>
