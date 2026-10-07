@@ -115,6 +115,16 @@ function doPost(e) {
         return createLook(data);
 
 
+
+      case 'getProfile':
+
+        return getProfile();
+
+
+      case 'updateProfile':
+
+        return updateProfile(data);
+
       case 'listLooks':
 
         return listLooks();
