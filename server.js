@@ -157,7 +157,7 @@ app.put('/api/profile', async (req,res)=>{
     return fail(res,e);
   }
 });
-app.get('/api/meta', (_req,res)=>ok(res,{categories:CATEGORIES,profile:PROFILE}));
+app.get('/api/meta', async (_req,res)=>{try{return ok(res,{categories:CATEGORIES,profile:(await getProfile())||PROFILE});}catch(e){return fail(res,e);}});
 app.get('/api/items', async (_req,res)=>{try{return ok(res,{items:await getItems()});}catch(e){return fail(res,e);}});
 app.get('/api/looks', async (_req,res)=>{try{return ok(res,{looks:await getLooks()});}catch(e){return fail(res,e);}});
 
@@ -185,11 +185,13 @@ app.post('/api/asesoria',async(req,res)=>{try{
   if(!closet.length)return fail(res,new Error('El armario no tiene prendas disponibles.'),400);
   const wantsLooks=Boolean(req.body?.generateLooks);
   if(wantsLooks){
-    const result=await ai.proposeLooks({query,profile:PROFILE,closet}); console.log('RESPUESTA IA LOOKS:', JSON.stringify(result.looks, null, 2));
+    const profile=await getProfile()||PROFILE;
+    const result=await ai.proposeLooks({query,profile,closet}); console.log('RESPUESTA IA LOOKS:', JSON.stringify(result.looks, null, 2));
     const looks=result.looks.map(look=>sanitizeAiLook(look,closet));
     return ok(res,{mode:'looks',looks});
   }
-  return ok(res,{mode:'text',answer:await ai.advise({query,profile:PROFILE,closet})});
+  const profile=await getProfile()||PROFILE;
+    return ok(res,{mode:'text',answer:await ai.advise({query,profile,closet})});
 }catch(e){return fail(res,e);}});
 
 app.post('/api/asesoria/visual',async(req,res)=>{try{

@@ -12,3 +12,6 @@ V2_LIMPIA_FINAL.zip
 V2_REVISION.zip
 server.js.backup-*
 public/js/*.backup-*
+.clasp.json
+Código.js
+appsscript.json

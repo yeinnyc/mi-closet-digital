@@ -1520,6 +1520,82 @@ function getRootFolder() {
    OBTENER HOJA DE ARTÍCULOS
 ========================================================= */
 
+
+function getProfileSheet() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  if (!spreadsheet) throw new Error('No se encontro la hoja de calculo.');
+
+  let sheet = spreadsheet.getSheetByName('PERFIL');
+
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet('PERFIL');
+  }
+
+  const headers = [
+    'ALTURA',
+    'BUSTO',
+    'CINTURA',
+    'CADERA',
+    'ESTILOS',
+    'COLORES_FAVORECEN',
+    'COLORES_NO_USAR'
+  ];
+
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+
+  return sheet;
+}
+
+function getProfile() {
+  const sheet = getProfileSheet();
+  const values = sheet.getDataRange().getValues();
+
+  if (values.length < 2) {
+    return jsonResponse({
+      ok: true,
+      profile: null
+    });
+  }
+
+  const row = values[1];
+
+  return jsonResponse({
+    ok: true,
+    profile: {
+      altura: String(row[0] || ''),
+      medidas: {
+        busto: String(row[1] || ''),
+        cintura: String(row[2] || ''),
+        cadera: String(row[3] || '')
+      },
+      preferencias: {
+        estilos: String(row[4] || ''),
+        colores_favorecen: String(row[5] || ''),
+        colores_no_usar: String(row[6] || '')
+      }
+    }
+  });
+}
+
+function updateProfile(data) {
+  const sheet = getProfileSheet();
+
+  const row = [
+    data.altura || '',
+    data.busto || '',
+    data.cintura || '',
+    data.cadera || '',
+    data.estilos || '',
+    data.colores_favorecen || '',
+    data.colores_no_usar || ''
+  ];
+
+  sheet.getRange(2, 1, 1, row.length).setValues([row]);
+
+  return getProfile();
+}
 function getSheet() {
 
   const spreadsheet =
